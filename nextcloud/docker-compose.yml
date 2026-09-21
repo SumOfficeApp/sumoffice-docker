@@ -1,0 +1,35 @@
+# SumOffice editors for Nextcloud — one public address, two editors behind it.
+# Nextcloud allows exactly one origin for the editor frame (CSP), so SumSheet
+# lives at /f1 and SumDoc at /a4 behind one nginx; /hosting/* is the WOPI
+# discovery Nextcloud reads. Put your TLS reverse proxy in front of :8093
+# (e.g. https://office.example.com → 127.0.0.1:8093).
+#
+# Set NEXTCLOUD_URL to the address your users open Nextcloud at, and
+# PUBLIC_URL to the address you give this stack (https://office.example.com).
+name: sumoffice-nextcloud
+services:
+  sumsheet:
+    image: hissih/sumsheet-webhost:latest
+    restart: unless-stopped
+    volumes: ["sumsheet-cabins:/data/cabins", "sumsheet-wopi:/data/wopi", "./start-sumsheet.sh:/start.sh:ro"]
+    environment: { PUBLIC_URL: "${PUBLIC_URL}", NEXTCLOUD_HOST: "${NEXTCLOUD_HOST}" }
+    entrypoint: ["sh", "/start.sh"]
+  sumdoc:
+    image: hissih/sumdoc-webhost:latest
+    restart: unless-stopped
+    volumes: ["sumdoc-cabins:/data/cabins"]
+    command: ["--base-path", "/a4", "--max-cabins", "8", "--idle-min", "15",
+              "--wopi-hosts", "${NEXTCLOUD_URL}", "--public-url", "${PUBLIC_URL}/a4"]
+  discovery:
+    image: python:3.12-alpine
+    restart: unless-stopped
+    volumes: ["./discovery.py:/discovery.py:ro"]
+    environment: { PUBLIC_URL: "${PUBLIC_URL}" }
+    command: ["python3", "/discovery.py"]
+  front:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports: ["127.0.0.1:8093:8093"]
+    volumes: ["./nginx.conf:/etc/nginx/conf.d/default.conf:ro"]
+    depends_on: [sumsheet, sumdoc, discovery]
+volumes: { sumsheet-cabins: {}, sumsheet-wopi: {}, sumdoc-cabins: {} }

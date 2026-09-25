@@ -55,6 +55,11 @@ class JointDiscovery(unittest.TestCase):
             self.assertTrue(a.get("urlsrc").startswith("https://office.example.com/f1/"))
         for a in apps["Word"].findall("action"):
             self.assertTrue(a.get("urlsrc").startswith("https://office.example.com/a4/"))
+        # SharePoint needs one default action per extension (IsDefaultAction); view, as Office Online Server has it
+        for app in apps.values():
+            defaults = [(a.get("ext"), a.get("name")) for a in app.findall("action") if a.get("default") == "true"]
+            exts = {a.get("ext") for a in app.findall("action")}
+            self.assertEqual(sorted(defaults), sorted((e, "view") for e in exts))
         # hosts that key actions by extension keep the last action: it must be edit
         last = {}
         for a in apps["Excel"].findall("action"): last[a.get("ext")] = a.get("name")

@@ -20,7 +20,9 @@ def sharepoint_zone(a, f):
         return m.group(1) if m else ""
     def app(name, pairs):
         # view before edit: hosts that key actions by extension keep the last one.
-        acts = "".join(f'<action name="view" ext="{e}" urlsrc="{u}"/><action name="edit" ext="{e}" urlsrc="{u}"/>' for e, u in pairs if u)
+        # view is the default action, as Office Online Server publishes it: SharePoint opens a document
+        # "in the browser" only through a binding marked IsDefaultAction, which comes from default="true".
+        acts = "".join(f'<action name="view" ext="{e}" default="true" urlsrc="{u}"/><action name="edit" ext="{e}" urlsrc="{u}"/>' for e, u in pairs if u)
         return f'<app name="{name}">{acts}</app>' if acts else ""
     word = app("Word", [("docx", src(a, "docx"))])
     xl = src(f, "xlsx")

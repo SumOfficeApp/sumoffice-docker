@@ -1,0 +1,38 @@
+manifestVersion: 1
+id: sumoffice
+category: files
+name: SumOffice
+version: "2026.3"
+tagline: Excel- and Word-compatible editors for Nextcloud Office
+description: >-
+  SumOffice adds two browser editors to Nextcloud Office over WOPI:
+  SumSheet for Excel workbooks (.xlsx, .xlsm, .xlsb) with VBA kept byte for byte,
+  and SumDoc for Word documents (.docx). Files stay in your Nextcloud; the editors
+  have no user database of their own.
+
+
+  After installing, open Nextcloud → Administration settings → Office →
+  "Use your own server" and enter http://umbrel.local:8093 (or http://<your Umbrel IP>:8093).
+  Nextcloud Office can use one office server at a time.
+
+
+  Needs about 2 GB RAM plus about 250 MB per open document. The editors are free for
+  evaluation; production use inside an organisation is licensed per application:
+  https://sumoffice.com/download#server
+releaseNotes: ""
+developer: SumOffice
+website: https://sumoffice.com
+dependencies:
+  - nextcloud
+repo: https://github.com/SumOfficeApp/sumoffice-docker
+support: https://github.com/SumOfficeApp/sumoffice-docker/issues
+port: 8093
+gallery:
+  - 1.jpg
+  - 2.jpg
+  - 3.jpg
+path: "/hosting/discovery"
+defaultUsername: ""
+defaultPassword: ""
+submitter: SumOffice
+submission: https://github.com/getumbrel/umbrel-apps/pull/0000

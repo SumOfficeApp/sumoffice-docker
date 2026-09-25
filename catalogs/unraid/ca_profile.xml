@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Maintainer>
+  <Icon>https://raw.githubusercontent.com/SumOfficeApp/sumoffice-docker/main/catalogs/unraid/sumoffice.png</Icon>
+  <Profile>SumOffice makes Excel- and Word-compatible web editors that keep files as real .xlsx, .xlsm and .docx, with macros and Power Query travelling with the file. Templates: SumOffice (both editors for Nextcloud Office, one container), SumSheet and SumDoc (standalone editors for your own system).</Profile>
+  <WebPage>https://sumoffice.com</WebPage>
+  <GitHub>https://github.com/SumOfficeApp/sumoffice-docker</GitHub>
+  <Forum/>
+  <DonateText/>
+  <DonateLink/>
+</Maintainer>

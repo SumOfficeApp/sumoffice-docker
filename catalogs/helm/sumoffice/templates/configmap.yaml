@@ -1,0 +1,42 @@
+{{- $fullname := include "sumoffice.fullname" . }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $fullname }}
+  labels:
+    {{- include "sumoffice.labels" . | nindent 4 }}
+data:
+  discovery.py: |
+    {{- .Files.Get "files/discovery.py" | nindent 4 }}
+  start-sumsheet.sh: |
+    #!/bin/sh
+    # SumSheet: the cabin manager plus the WOPI facade that speaks to the WOPI host.
+    set -e
+    mkdir -p /data/cabins /data/wopi
+    cd /app
+    node apps/desktop-shell/webhost/cabin-manager.mjs --docs-dir /data/cabins --template /app/blank.xlsx --port 8095 --base-path /f1 \
+      --max-cabins "${MAX_CABINS}" --idle-min "${IDLE_MIN}" \
+      --auth-url http://127.0.0.1:8092/v1/me --attach-url 'http://127.0.0.1:8092/v1/attachments/{id}/content' &
+    sleep 3
+    exec node apps/desktop-shell/webhost/wopi-facade.mjs --port 8092 --manager http://127.0.0.1:8095 \
+      --public-url "${PUBLIC_URL}/f1" --state-dir /data/wopi --idle-min 30 --wopi-allow "${WOPI_ALLOW}"
+  default.conf: |
+    # One origin for both editors: Nextcloud's CSP allows exactly one.
+    server {
+      listen 8093;
+      client_max_body_size {{ .Values.front.clientMaxBodySize }};
+      proxy_http_version 1.1;
+      proxy_set_header Host $http_host;
+      proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection $http_connection;
+      proxy_read_timeout 3600s;
+      proxy_buffering off;
+      location = /health { return 200 "ok"; }
+      location /hosting/ { proxy_pass http://{{ $fullname }}-discovery:8093; }
+      location /f1/ { proxy_pass http://{{ $fullname }}-sumsheet:8092; }
+      location = /f1 { proxy_pass http://{{ $fullname }}-sumsheet:8092; }
+      location /a4/ { proxy_pass http://{{ $fullname }}-sumdoc:8090; }
+      location = /a4 { proxy_pass http://{{ $fullname }}-sumdoc:8090; }
+      location / { return 404; }
+    }

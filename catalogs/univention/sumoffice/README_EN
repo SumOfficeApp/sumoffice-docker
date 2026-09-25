@@ -1,0 +1,9 @@
+SumOffice serves two editors on this host: SumSheet at /f1 (Excel workbooks) and SumDoc at /a4 (Word documents),
+with a joint WOPI discovery at /hosting/discovery.
+
+To connect Nextcloud (for example the Nextcloud app of this UCS): Administration settings, Office,
+"Use your own server", enter the public URL of this app (by default https://<this host>).
+Nextcloud Office uses one office server at a time; SumOffice cannot be installed next to Collabora.
+
+The editors are free for evaluation; production use inside an organisation is licensed per application:
+https://sumoffice.com/download#server

@@ -1,0 +1,47 @@
+apiVersion: v2
+name: sumoffice
+description: SumOffice web editors (SumSheet for Excel workbooks, SumDoc for Word documents) behind one origin with a joint WOPI discovery, for Nextcloud Office and other WOPI hosts.
+type: application
+version: 0.1.0
+appVersion: "2026.3"
+kubeVersion: ">=1.23.0-0"
+home: https://github.com/SumOfficeApp/sumoffice-docker
+icon: https://raw.githubusercontent.com/SumOfficeApp/sumoffice-docker/main/catalogs/helm/sumoffice/icon.png
+sources:
+  - https://github.com/SumOfficeApp/sumoffice-docker
+keywords:
+  - office
+  - spreadsheet
+  - xlsx
+  - docx
+  - wopi
+  - nextcloud
+maintainers:
+  - name: SumOffice
+    url: https://github.com/SumOfficeApp/sumoffice-docker
+annotations:
+  artifacthub.io/license: MIT
+  artifacthub.io/prerelease: "true"
+  artifacthub.io/operator: "false"
+  artifacthub.io/links: |
+    - name: Source
+      url: https://github.com/SumOfficeApp/sumoffice-docker
+    - name: Documentation
+      url: https://docs.sumoffice.com
+    - name: Website
+      url: https://sumoffice.com
+  artifacthub.io/maintainers: |
+    - name: SumOffice
+      email: hello@sumoffice.com
+  artifacthub.io/images: |
+    - name: sumsheet
+      image: hissih/sumsheet-webhost:latest
+    - name: sumdoc
+      image: hissih/sumdoc-webhost:latest
+    - name: discovery
+      image: python:3.12-alpine
+    - name: front
+      image: nginx:1.27-alpine
+  artifacthub.io/changes: |
+    - kind: added
+      description: First draft of the chart

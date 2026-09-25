@@ -1,0 +1,26 @@
+[sumoffice/public_url]
+Type = String
+Required = True
+Show = Install, Settings
+Description = Address the browser uses to reach the editors, e.g. https://ucs.example.com (this host, served by its Apache).
+InitialValue = https://@%@hostname@%@.@%@domainname@%@
+
+[sumoffice/wopi_host]
+Type = String
+Required = True
+Show = Install, Settings
+Description = Host name of the file storage (your Nextcloud) allowed to open files, without scheme.
+InitialValue = @%@hostname@%@.@%@domainname@%@
+
+[sumoffice/wopi_url]
+Type = String
+Required = False
+Show = Install, Settings
+Description = Full origin of the same storage, e.g. https://ucs.example.com (empty: https://<WOPI host name>).
+
+[sumoffice/max_cabins]
+Type = Int
+Required = True
+Show = Install, Settings
+Description = Open documents per editor (about 250 MB RAM each).
+InitialValue = 8

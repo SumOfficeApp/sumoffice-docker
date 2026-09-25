@@ -1,0 +1,24 @@
+{
+  "manifestVersion": 2,
+  "id": "com.sumoffice.cloudronapp",
+  "title": "SumOffice",
+  "author": "SumOffice",
+  "tagline": "Excel- and Word-compatible web editors for Nextcloud Office",
+  "description": "file://DESCRIPTION.md",
+  "changelog": "file://CHANGELOG",
+  "postInstallMessage": "file://POSTINSTALL.md",
+  "website": "https://github.com/SumOfficeApp/sumoffice-docker",
+  "contactEmail": "hello@sumoffice.com",
+  "version": "0.1.0",
+  "upstreamVersion": "2026.3",
+  "httpPort": 8093,
+  "healthCheckPath": "/health",
+  "addons": {
+    "localstorage": {}
+  },
+  "memoryLimit": 4294967296,
+  "optionalSso": false,
+  "tags": ["office", "productivity", "spreadsheet", "documents", "wopi", "nextcloud"],
+  "minBoxVersion": "8.0.0",
+  "mediaLinks": []
+}

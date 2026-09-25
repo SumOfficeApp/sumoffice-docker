@@ -1,0 +1,40 @@
+{
+  "appId": "sumoffice",
+  "name": "SumOffice",
+  "apiKey": "<your Egnyte Public API key>",
+  "company": { "name": "SumOffice", "website": "https://github.com/SumOfficeApp/sumoffice-docker" },
+  "support": { "web": "https://github.com/SumOfficeApp/sumoffice-docker/issues" },
+  "categories": ["productivity", "collaboration"],
+  "type": "egnyte_ui",
+  "description": "Open and edit Excel and Word files (.xlsx, .xlsm, .xlsb, .docx) in SumOffice. Saving adds a new version of the same file.",
+  "longDescription": "SumSheet (Excel-compatible) and SumDoc (Word-compatible) open files straight from Egnyte. Macros in .xlsm workbooks and images in documents are kept byte for byte. Ctrl+S saves a new version of the same Egnyte file with the person's own rights.",
+  "appLogo": "https://sumoffice-egnyte.example.com/static/logo.png",
+  "screenshots": { "images": ["https://sumoffice-egnyte.example.com/static/1.png", "https://sumoffice-egnyte.example.com/static/2.png", "https://sumoffice-egnyte.example.com/static/3.png"] },
+  "integrations": {
+    "sumofficeEdit": {
+      "entryPoint": "context_menu",
+      "actionType": "open",
+      "types": ["file"],
+      "extensions": ["xlsx", "xlsm", "xlsb", "docx"],
+      "permissionLevels": ["owner", "full", "editor"],
+      "serviceUrl": "https://sumoffice-egnyte.example.com/egnyte/invoke?mode=edit",
+      "invocationMethod": "post_to_tab",
+      "selectionQuantity": "single",
+      "limitations": { "sizeKB": 102400 },
+      "icon": "edit",
+      "text": "Edit in SumOffice"
+    },
+    "sumofficeView": {
+      "entryPoint": "context_menu",
+      "actionType": "open",
+      "types": ["file"],
+      "extensions": ["xlsx", "xlsm", "xlsb", "docx"],
+      "permissionLevels": ["viewer"],
+      "serviceUrl": "https://sumoffice-egnyte.example.com/egnyte/invoke?mode=view",
+      "invocationMethod": "post_to_tab",
+      "selectionQuantity": "single",
+      "icon": "eye-open",
+      "text": "View in SumOffice"
+    }
+  }
+}

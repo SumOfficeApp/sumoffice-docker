@@ -6,7 +6,7 @@ Self-hosting catalog packages for SumOffice: **SumSheet** (Excel-compatible, `/f
 `/a4`) and the joint WOPI discovery (`/hosting/discovery`, `/hosting/capabilities`) behind one origin on port 8093.
 Nothing here has been submitted to any catalog.
 
-Two shapes are used:
+Three shapes are used:
 
 - **Four services** (same as `nextcloud/docker-compose.yml`): `hissih/sumsheet-webhost`, `hissih/sumdoc-webhost`,
   discovery (`python:3.12-alpine` + `nextcloud/discovery.py`), nginx front. Used where side files can ship:
@@ -14,8 +14,13 @@ Two shapes are used:
 - **One image** `hissih/sumoffice-aio` (`aio/` on the `aio-single-image` branch; same processes, Node front instead
   of nginx/python). Used where a catalog ships only a compose file or one container: CapRover, TrueNAS, Unraid,
   Umbrel, Univention; Cloudron builds an equivalent image of its own from the two editor images.
+- **A virtual machine** (`vm/`, shared by DigitalOcean, Vultr, Azure and OVHcloud): Ubuntu 24.04 with Docker and
+  the four-service compose of `nextcloud/`, Caddy on 80/443 in front of it (Let's Encrypt for a DNS name).
+  Images are pulled into the snapshot (DigitalOcean, Vultr) or on first boot (cloud-init); the proof key, `.env`
+  and containers are always created per instance on first boot
+  (`sumoffice-configure`).
 
-In both shapes both editors sign WOPI requests with **one proof key** (generated once, kept in the data volume or a
+In all shapes both editors sign WOPI requests with **one proof key** (generated once, kept in the data volume or a
 Secret, exposed via `SUMOFFICE_WOPI_PROOF_DIR` and SumDoc's legacy `wopi-proof.json`).
 
 | Catalog | Folder | Submission path | What the owner must do | Blockers |
@@ -28,6 +33,12 @@ Secret, exposed via `SUMOFFICE_WOPI_PROOF_DIR` and SumDoc's legacy `wopi-proof.j
 | Proxmox VE (community-scripts) | `proxmox/ct`, `proxmox/install` | PR to github.com/community-scripts/ProxmoxVED (new scripts go there first, then ProxmoxVE) | fork ProxmoxVED, test on a real PVE host (`dev_mode="trace,keep"`), open the PR; website metadata via their site | Docker-based script may be declined (they prefer native installs); arm64 off until multi-arch images |
 | Umbrel App Store | `umbrel/sumoffice` | PR to github.com/getumbrel/umbrel-apps adding the `sumoffice/` folder | test on umbrelOS, pin the image digest, provide icon (SVG) + 3 gallery images, set `submission:` to the PR URL | **arm64 images required**; aio image; server-side reach of Nextcloud (`wopi_callback_url`) to verify |
 | Univention App Center | `univention/sumoffice` | Univention App Provider Portal (account from Univention) | get an app `Code`, create a Docker Compose app, paste `ini`/`compose`/`settings`/`inst`/`uinst`, test on UCS 5.2 | aio image; **licence-key sale needs the "key in image" work first**; confirm settings templating in compose |
+| DigitalOcean Marketplace (Droplet 1-Click) | `digitalocean/`, `vm/` | Vendor Portal (cloud.digitalocean.com/vendorportal): snapshot built with Packer, checked by DigitalOcean's `99-img-check.sh` | vendor account; `packer build` with a team token; listing texts, logo | republished images; full `packer validate` and a real build not run here |
+| Vultr Marketplace | `vultr/`, `vm/` | vendor portal → app → Builds: Vendor Data script (`vendor-data.sh`) or a Packer snapshot | vendor account; paste the script or `packer build`; App Instructions, gallery | republished images; a tag of this repository with `catalogs/vm/`; 8 GB plan disk not measured |
+| Azure Marketplace (Azure Application, solution template) | `azure/` (+ `vm/` via cloud-init) | Partner Center: zip of `mainTemplate.json` + `createUiDefinition.json` | Partner Center publisher account; arm-ttk, UI sandbox and a test deployment; listing | republished images; a tag with `catalogs/vm/` as `sumofficeRef` default |
+| OVHcloud Marketplace | `ovhcloud/` (+ `vm/` via cloud-init) | no self-service format: vendors are onboarded by the marketplace team (`vendeur-marketplace@ovhcloud.com`) | the conversation with OVHcloud; test `cloud-init.yaml` on a Public Cloud instance | the format OVHcloud wants is unknown until then |
+| Flathub | `flathub/` (README only) | PR to github.com/flathub/flathub (`new-pr` branch) | — | not applicable: desktop channel, this repository ships server images only |
+| Snap Store | `snap/` (README only) | snapcraft.io | — | not applicable as is: a Docker-driving snap needs a super-privileged interface; no native server release to package |
 
 Related drafts outside this folder: Nextcloud AIO community container and CasaOS (both use the same one image).
 
@@ -41,6 +52,13 @@ Related drafts outside this folder: Nextcloud AIO community container and CasaOS
   `basic-values.yaml` (outside the official CI container).
 - Proxmox: the compose override written by the install script merges with `nextcloud/docker-compose.yml`
   (`docker compose config`).
-- Nothing was run end-to-end: no images were pulled and no catalog CI was run.
+- VM packages: `bash -n` + ShellCheck 0.11.0 on every script; `packer fmt -check` and `packer validate
+  -syntax-only` (Packer 1.16.1) on both templates (builder plugins not installable here, fields checked against
+  the plugin docs); `bicep build` + `bicep lint` (0.47.16); `createUiDefinition.json` against its published JSON
+  schema; `cloud-init schema -c` on both cloud-config files; `sumoffice-configure` exercised with stubbed
+  docker/caddy/systemctl, and its compose override merged with `nextcloud/docker-compose.yml`
+  (`docker compose config`). Details in each folder's README.
+- Nothing was run end-to-end: no images were pulled and no catalog CI was run; no VM, Droplet or Azure deployment
+  was created.
 
 Maintainer: SumOffice — https://github.com/SumOfficeApp/sumoffice-docker

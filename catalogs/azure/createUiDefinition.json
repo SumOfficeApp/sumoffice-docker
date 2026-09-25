@@ -1,0 +1,158 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/0.1.2-preview/CreateUIDefinition.MultiVm.json#",
+  "handler": "Microsoft.Azure.CreateUIDef",
+  "version": "0.1.2-preview",
+  "parameters": {
+    "config": {
+      "basics": {
+        "description": "SumOffice: Excel-compatible (SumSheet) and Word-compatible (SumDoc) editors for Nextcloud on one Ubuntu 24.04 LTS virtual machine. Files stay real .xlsx, .xlsm and .docx in your Nextcloud."
+      }
+    },
+    "basics": [
+      {
+        "name": "vmName",
+        "type": "Microsoft.Common.TextBox",
+        "label": "Virtual machine name",
+        "defaultValue": "sumoffice",
+        "toolTip": "Name of the virtual machine; also used as the prefix of the network resources.",
+        "constraints": {
+          "required": true,
+          "regex": "^[a-z][a-z0-9-]{1,40}[a-z0-9]$",
+          "validationMessage": "3 to 42 characters: lowercase letters, digits and hyphens; starts with a letter, does not end with a hyphen."
+        }
+      },
+      {
+        "name": "adminUsername",
+        "type": "Microsoft.Compute.UserNameTextBox",
+        "label": "Administrator user name",
+        "toolTip": "User name for SSH access to the virtual machine.",
+        "osPlatform": "Linux",
+        "constraints": {
+          "required": true
+        }
+      },
+      {
+        "name": "credentials",
+        "type": "Microsoft.Compute.CredentialsCombo",
+        "label": {
+          "authenticationType": "Authentication type",
+          "password": "Password",
+          "confirmPassword": "Confirm password",
+          "sshPublicKey": "SSH public key"
+        },
+        "toolTip": {
+          "authenticationType": "SSH public key is recommended.",
+          "password": "Password for the administrator.",
+          "sshPublicKey": "SSH public key for the administrator."
+        },
+        "osPlatform": "Linux",
+        "constraints": {
+          "required": true
+        },
+        "options": {
+          "hideConfirmation": false,
+          "hidePassword": false
+        }
+      }
+    ],
+    "steps": [
+      {
+        "name": "vmSettings",
+        "label": "Virtual machine",
+        "subLabel": {
+          "preValidation": "Choose the size",
+          "postValidation": "Done"
+        },
+        "bladeTitle": "Virtual machine settings",
+        "elements": [
+          {
+            "name": "vmSize",
+            "type": "Microsoft.Compute.SizeSelector",
+            "label": "Size",
+            "toolTip": "2 GB RAM for the server plus about 250 MB per open document. The editor images are x86-64.",
+            "recommendedSizes": [
+              "Standard_B2s",
+              "Standard_B2ms",
+              "Standard_D2s_v5"
+            ],
+            "osPlatform": "Linux",
+            "imageReference": {
+              "publisher": "Canonical",
+              "offer": "ubuntu-24_04-lts",
+              "sku": "server"
+            },
+            "count": 1
+          },
+          {
+            "name": "sshSourceAddressPrefix",
+            "type": "Microsoft.Common.TextBox",
+            "label": "Allow SSH from",
+            "defaultValue": "*",
+            "toolTip": "Source address prefix for port 22, e.g. 203.0.113.0/24, or * for any address. Ports 80 and 443 are open to everyone (the editors and the certificate check).",
+            "constraints": {
+              "required": true,
+              "regex": "^(\\*|[0-9]{1,3}(\\.[0-9]{1,3}){3}(/[0-9]{1,2})?)$",
+              "validationMessage": "Enter * or an IPv4 address or CIDR range."
+            }
+          }
+        ]
+      },
+      {
+        "name": "sumoffice",
+        "label": "SumOffice",
+        "subLabel": {
+          "preValidation": "Connect Nextcloud",
+          "postValidation": "Done"
+        },
+        "bladeTitle": "SumOffice settings",
+        "elements": [
+          {
+            "name": "nextcloudUrl",
+            "type": "Microsoft.Common.TextBox",
+            "label": "Nextcloud address",
+            "placeholder": "https://cloud.example.com",
+            "toolTip": "The address your users open Nextcloud at. Only this Nextcloud may open files in the editors.",
+            "constraints": {
+              "required": true,
+              "regex": "^https?://[A-Za-z0-9.-]+(:[0-9]{1,5})?$",
+              "validationMessage": "Scheme and host only, e.g. https://cloud.example.com (no path, no trailing slash)."
+            }
+          },
+          {
+            "name": "customDomain",
+            "type": "Microsoft.Common.TextBox",
+            "label": "DNS name of your own (optional)",
+            "defaultValue": "",
+            "placeholder": "office.example.com",
+            "toolTip": "Leave empty to use the Azure DNS name of the VM's public IP address. If you enter a name, point its A or CNAME record at the VM after deployment; the certificate is issued once the record resolves.",
+            "constraints": {
+              "required": false,
+              "regex": "^$|^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$",
+              "validationMessage": "A DNS name such as office.example.com, without https://."
+            }
+          },
+          {
+            "name": "licenceInfo",
+            "type": "Microsoft.Common.InfoBox",
+            "options": {
+              "icon": "Info",
+              "text": "The editors are free for evaluation; production use inside an organisation is licensed per application.",
+              "uri": "https://sumoffice.com/download#server"
+            }
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "location": "[location()]",
+      "vmName": "[basics('vmName')]",
+      "adminUsername": "[basics('adminUsername')]",
+      "authenticationType": "[basics('credentials').authenticationType]",
+      "adminPasswordOrKey": "[if(equals(basics('credentials').authenticationType, 'password'), basics('credentials').password, basics('credentials').sshPublicKey)]",
+      "vmSize": "[steps('vmSettings').vmSize]",
+      "sshSourceAddressPrefix": "[steps('vmSettings').sshSourceAddressPrefix]",
+      "nextcloudUrl": "[steps('sumoffice').nextcloudUrl]",
+      "customDomain": "[if(empty(steps('sumoffice').customDomain), 'none', steps('sumoffice').customDomain)]"
+    }
+  }
+}

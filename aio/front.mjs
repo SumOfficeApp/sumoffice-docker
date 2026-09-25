@@ -42,10 +42,11 @@ async function discovery() {
     }
   }
   extra.push(`<app name="Capabilities"><action name="getinfo" ext="" default="true" urlsrc="${PUBLIC}/hosting/capabilities"/></app>`);
-  // SharePoint reads the internal-https zone and the Word/Excel app names; view before edit per extension.
+  // SharePoint reads the internal-https zone and the Word/Excel app names; view before edit per extension,
+  // view marked default (SharePoint opens "in the browser" only through a default binding, as with Office Online Server).
   let sp = "";
   if (PUBLIC.startsWith("https://")) {
-    const acts = (pairs) => pairs.filter(([, u]) => u).map(([e, u]) => `<action name="view" ext="${e}" urlsrc="${u}"/><action name="edit" ext="${e}" urlsrc="${u}"/>`).join("");
+    const acts = (pairs) => pairs.filter(([, u]) => u).map(([e, u]) => `<action name="view" ext="${e}" default="true" urlsrc="${u}"/><action name="edit" ext="${e}" urlsrc="${u}"/>`).join("");
     const w = acts([["docx", srcFor(a, "docx")]]);
     const xs = srcFor(f, "xlsx");
     const x = acts([["xlsx", xs], ["xlsm", xs], ["xlsb", xs]]);

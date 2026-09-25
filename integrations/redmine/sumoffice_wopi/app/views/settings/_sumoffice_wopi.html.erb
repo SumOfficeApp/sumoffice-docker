@@ -1,0 +1,9 @@
+<p>
+  <label for="settings_discovery_url">SumOffice discovery URL</label>
+  <%= text_field_tag 'settings[discovery_url]', @settings['discovery_url'], size: 60, placeholder: 'https://office.example.com/hosting/discovery' %>
+</p>
+<p>
+  <label for="settings_verify_proof">Verify SumOffice proof signatures</label>
+  <%= hidden_field_tag 'settings[verify_proof]', '0' %>
+  <%= check_box_tag 'settings[verify_proof]', '1', @settings['verify_proof'].to_s != '0' %>
+</p>

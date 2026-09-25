@@ -1,0 +1,14 @@
+{
+  "manifest_version": 1,
+  "version": "1.0.0",
+  "type": "APP",
+  "name": { "en": "SumOffice", "ja": "SumOffice" },
+  "description": {
+    "en": "Open .xlsx, .xlsm, .xlsb and .docx attachments in SumOffice (SumSheet, SumDoc). Ctrl+S saves the file back into the same field.",
+    "ja": "添付ファイル（.xlsx、.xlsm、.xlsb、.docx）を SumOffice で開いて編集し、Ctrl+S で同じフィールドに保存します。"
+  },
+  "icon": "image/icon.png",
+  "homepage_url": { "en": "https://github.com/SumOfficeApp/sumoffice-docker/tree/main/integrations/kintone" },
+  "desktop": { "js": ["js/desktop.js"], "css": [] },
+  "config": { "html": "html/config.html", "js": ["js/config.js"], "css": [], "required_params": ["bridgeUrl"] }
+}

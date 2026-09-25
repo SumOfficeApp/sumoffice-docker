@@ -17,8 +17,7 @@ If SumOffice uses a private certificate, add its CA to the Group-Office containe
 ## Needs SumOffice with the multipart form fix
 
 Group-Office posts the access token to the editor as `multipart/form-data`, which Office Online also accepts. Older SumOffice builds read only `application/x-www-form-urlencoded`, so they answer "Incomplete WOPI request" / "нужны WOPISrc и access_token".
-- The fix is FastOffices/f1#1200 (SumSheet) and FastOffices/a4#3654 (SumDoc).
-- Group-Office needs SumOffice images built after them.
+- Group-Office needs SumSheet and SumDoc images built after 25.09.2026, which include the multipart form fix.
 
 ## Checked on
 

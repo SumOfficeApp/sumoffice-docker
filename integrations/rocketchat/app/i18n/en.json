@@ -1,0 +1,7 @@
+{
+  "open_in_sumoffice": "Open in SumOffice",
+  "bridge_url_label": "SumOffice bridge URL",
+  "bridge_url_description": "The HTTPS address of the SumOffice bridge for Rocket.Chat, e.g. https://sumoffice-rc.example.com",
+  "bridge_secret_label": "Bridge secret",
+  "bridge_secret_description": "The same value as BRIDGE_SECRET of the bridge, at least 16 characters"
+}

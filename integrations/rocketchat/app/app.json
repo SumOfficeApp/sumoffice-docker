@@ -1,0 +1,17 @@
+{
+  "id": "5b1d6a52-7f7e-4c0e-9a7b-3f2d0c8e9b41",
+  "version": "1.0.1",
+  "requiredApiVersion": "^1.44.0",
+  "iconFile": "icon.png",
+  "author": { "name": "SumOffice", "homepage": "https://github.com/SumOfficeApp/sumoffice-docker", "support": "https://github.com/SumOfficeApp/sumoffice-docker/issues" },
+  "name": "SumOffice",
+  "nameSlug": "sumoffice",
+  "classFile": "SumOfficeApp.js",
+  "description": "Open .xlsx, .xlsm, .xlsb and .docx files from messages in SumOffice (SumSheet, SumDoc). Ctrl+S posts the edited file back into the room.",
+  "implements": [],
+  "permissions": [
+    { "name": "upload.read" }, { "name": "upload.write" }, { "name": "room.read" }, { "name": "user.read" },
+    { "name": "message.read" }, { "name": "api" }, { "name": "networking" }, { "name": "server-setting.read" },
+    { "name": "ui.registerButtons" }, { "name": "ui.interact" }
+  ]
+}

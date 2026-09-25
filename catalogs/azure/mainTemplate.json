@@ -1,0 +1,287 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.47.16.16243",
+      "templateHash": "16665535267388367275"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location for all resources."
+      }
+    },
+    "vmName": {
+      "type": "string",
+      "defaultValue": "sumoffice",
+      "minLength": 1,
+      "maxLength": 64,
+      "metadata": {
+        "description": "Name of the virtual machine."
+      }
+    },
+    "vmSize": {
+      "type": "string",
+      "defaultValue": "Standard_B2s",
+      "metadata": {
+        "description": "Size of the virtual machine. 2 GB RAM for the server plus about 250 MB per open document."
+      }
+    },
+    "adminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "Administrator user name for SSH."
+      }
+    },
+    "authenticationType": {
+      "type": "string",
+      "defaultValue": "sshPublicKey",
+      "allowedValues": [
+        "sshPublicKey",
+        "password"
+      ],
+      "metadata": {
+        "description": "Type of authentication for the administrator."
+      }
+    },
+    "adminPasswordOrKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "SSH public key or password for the administrator, depending on authenticationType."
+      }
+    },
+    "nextcloudUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "Address of the Nextcloud your users open, e.g. https://cloud.example.com (the WOPI host allowed to open files)."
+      }
+    },
+    "customDomain": {
+      "type": "string",
+      "defaultValue": "none",
+      "metadata": {
+        "description": "Optional DNS name of your own (A/CNAME record pointing at the VM). Use \"none\" to publish at the Azure DNS name of the public IP address."
+      }
+    },
+    "sshSourceAddressPrefix": {
+      "type": "string",
+      "defaultValue": "*",
+      "metadata": {
+        "description": "Source address prefix allowed to reach SSH (port 22), e.g. your office range in CIDR form, or * for any."
+      }
+    },
+    "sumofficeRef": {
+      "type": "string",
+      "defaultValue": "main",
+      "metadata": {
+        "description": "Branch or tag of github.com/SumOfficeApp/sumoffice-docker that the VM installs from."
+      }
+    }
+  },
+  "variables": {
+    "$fxv#0": "#cloud-config\n# SumOffice on an Azure VM (Ubuntu 24.04 LTS). main.bicep loads this file with loadTextContent() and replaces\n# the three __PLACEHOLDERS__ with deployment parameters before passing it as the VM's customData.\n# Log: /var/log/cloud-init-output.log\npackage_update: true\npackage_upgrade: true\npackages:\n  - git\n  - ca-certificates\n  - curl\nruncmd:\n  - [git, clone, --depth, '1', --branch, '__SUMOFFICE_REF__', 'https://github.com/SumOfficeApp/sumoffice-docker', /opt/sumoffice]\n  - [env, 'SUMOFFICE_REF=__SUMOFFICE_REF__', bash, /opt/sumoffice/catalogs/vm/sumoffice-install.sh]\n  - [/usr/local/sbin/sumoffice-configure, --domain, '__DOMAIN__', --nextcloud-url, '__NEXTCLOUD_URL__']\nfinal_message: \"SumOffice cloud-init finished after $UPTIME seconds\"\n",
+    "dnsLabel": "[toLower(format('sumoffice-{0}', uniqueString(resourceGroup().id, parameters('vmName'))))]",
+    "nsgName": "[format('{0}-nsg', parameters('vmName'))]",
+    "vnetName": "[format('{0}-vnet', parameters('vmName'))]",
+    "subnetName": "default",
+    "publicIpName": "[format('{0}-ip', parameters('vmName'))]",
+    "nicName": "[format('{0}-nic', parameters('vmName'))]",
+    "linuxConfiguration": {
+      "disablePasswordAuthentication": true,
+      "ssh": {
+        "publicKeys": [
+          {
+            "path": "[format('/home/{0}/.ssh/authorized_keys', parameters('adminUsername'))]",
+            "keyData": "[parameters('adminPasswordOrKey')]"
+          }
+        ]
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2025-05-01",
+      "name": "[variables('nsgName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "SSH",
+            "properties": {
+              "priority": 1000,
+              "protocol": "Tcp",
+              "access": "Allow",
+              "direction": "Inbound",
+              "sourceAddressPrefix": "[parameters('sshSourceAddressPrefix')]",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "22"
+            }
+          },
+          {
+            "name": "HTTP",
+            "properties": {
+              "priority": 1010,
+              "protocol": "Tcp",
+              "access": "Allow",
+              "direction": "Inbound",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "80"
+            }
+          },
+          {
+            "name": "HTTPS",
+            "properties": {
+              "priority": 1020,
+              "protocol": "Tcp",
+              "access": "Allow",
+              "direction": "Inbound",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "443"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2025-05-01",
+      "name": "[variables('vnetName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "10.10.0.0/16"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('subnetName')]",
+            "properties": {
+              "addressPrefix": "10.10.0.0/24",
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]"
+              }
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2025-05-01",
+      "name": "[variables('publicIpName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "Static",
+        "dnsSettings": {
+          "domainNameLabel": "[variables('dnsLabel')]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2025-05-01",
+      "name": "[variables('nicName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables('subnetName'))]"
+              },
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName'))]"
+              }
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2025-04-01",
+      "name": "[parameters('vmName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('vmSize')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "Canonical",
+            "offer": "ubuntu-24_04-lts",
+            "sku": "server",
+            "version": "latest"
+          },
+          "osDisk": {
+            "createOption": "FromImage",
+            "diskSizeGB": 30,
+            "managedDisk": {
+              "storageAccountType": "StandardSSD_LRS"
+            }
+          }
+        },
+        "osProfile": {
+          "computerName": "[parameters('vmName')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPasswordOrKey')]",
+          "linuxConfiguration": "[if(equals(parameters('authenticationType'), 'password'), null(), variables('linuxConfiguration'))]",
+          "customData": "[base64(replace(replace(replace(variables('$fxv#0'), '__SUMOFFICE_REF__', parameters('sumofficeRef')), '__DOMAIN__', if(or(empty(parameters('customDomain')), equals(toLower(parameters('customDomain')), 'none')), reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName')), '2025-05-01').dnsSettings.fqdn, parameters('customDomain'))), '__NEXTCLOUD_URL__', parameters('nextcloudUrl')))]"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]",
+        "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "editorsUrl": {
+      "type": "string",
+      "value": "[format('https://{0}', if(or(empty(parameters('customDomain')), equals(toLower(parameters('customDomain')), 'none')), reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName')), '2025-05-01').dnsSettings.fqdn, parameters('customDomain')))]"
+    },
+    "azureDnsName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName')), '2025-05-01').dnsSettings.fqdn]"
+    },
+    "sshCommand": {
+      "type": "string",
+      "value": "[format('ssh {0}@{1}', parameters('adminUsername'), reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName')), '2025-05-01').dnsSettings.fqdn)]"
+    },
+    "nextcloudCommand": {
+      "type": "string",
+      "value": "[format('sh nextcloud-occ.sh https://{0}', if(or(empty(parameters('customDomain')), equals(toLower(parameters('customDomain')), 'none')), reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName')), '2025-05-01').dnsSettings.fqdn, parameters('customDomain')))]"
+    }
+  }
+}

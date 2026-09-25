@@ -1,0 +1,28 @@
+#cloud-config
+# SumOffice on an OVHcloud Public Cloud instance (Ubuntu 24.04, x86-64).
+# Paste as the post-installation script / user data when creating the instance, after editing the three
+# values under write_files:
+#   SUMOFFICE_DOMAIN         DNS name pointing at the instance -> https://<name> with a Let's Encrypt certificate;
+#                            leave empty to start on plain http://<instance IP> (fine for a first look only)
+#   SUMOFFICE_PUBLIC_URL     only if TLS is terminated elsewhere (e.g. an OVHcloud load balancer); else empty
+#   SUMOFFICE_NEXTCLOUD_URL  the Nextcloud your users open
+# Change them later on the instance with: sudo sumoffice-configure --interactive
+# Log: /var/log/cloud-init-output.log
+package_update: true
+package_upgrade: true
+packages:
+  - git
+  - ca-certificates
+  - curl
+write_files:
+  - path: /etc/sumoffice/sumoffice.env
+    permissions: '0644'
+    content: |
+      SUMOFFICE_DOMAIN=
+      SUMOFFICE_PUBLIC_URL=
+      SUMOFFICE_NEXTCLOUD_URL=https://cloud.example.com
+runcmd:
+  - [git, clone, --depth, '1', --branch, main, 'https://github.com/SumOfficeApp/sumoffice-docker', /opt/sumoffice]
+  - [bash, /opt/sumoffice/catalogs/vm/sumoffice-install.sh]
+  - [/usr/local/sbin/sumoffice-configure]
+final_message: "SumOffice cloud-init finished after $UPTIME seconds"

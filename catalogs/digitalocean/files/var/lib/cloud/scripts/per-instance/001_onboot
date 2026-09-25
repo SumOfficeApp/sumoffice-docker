@@ -1,0 +1,24 @@
+#!/bin/bash
+# First boot of every new Droplet made from the SumOffice image (cloud-init per-instance script).
+# Starts the stack on plain http://<Droplet IP> with a placeholder Nextcloud, then asks for the DNS name and
+# the Nextcloud address on the first root login (sumoffice-first-login, hooked into /root/.bashrc).
+set -uo pipefail
+
+meta() { curl -fsS --retry 10 --retry-connrefused --max-time 2 "$1"; }
+ip="$(meta http://169.254.169.254/metadata/v1/interfaces/public/0/ipv4/address 2>/dev/null || true)"
+[[ -n "$ip" ]] || ip="$(hostname -I | awk '{print $1}')"
+
+if ! /usr/local/sbin/sumoffice-configure --public-url "http://${ip}" >/var/log/sumoffice-firstboot.log 2>&1; then
+  echo "sumoffice-configure failed on first boot; see /var/log/sumoffice-firstboot.log" >&2
+fi
+
+if ! grep -q 'sumoffice-first-login' /root/.bashrc 2>/dev/null; then
+  echo '/usr/local/sbin/sumoffice-first-login' >>/root/.bashrc
+fi
+
+# Remove the ssh force logout command added at build time (scripts/03-force-ssh-logout.sh).
+sed -e '/Match User root/d' \
+    -e '/.*ForceCommand.*droplet.*/d' \
+    -i /etc/ssh/sshd_config
+
+systemctl restart ssh

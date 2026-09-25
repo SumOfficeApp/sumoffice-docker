@@ -1,0 +1,15 @@
+#cloud-config
+# SumOffice on an Azure VM (Ubuntu 24.04 LTS). main.bicep loads this file with loadTextContent() and replaces
+# the three __PLACEHOLDERS__ with deployment parameters before passing it as the VM's customData.
+# Log: /var/log/cloud-init-output.log
+package_update: true
+package_upgrade: true
+packages:
+  - git
+  - ca-certificates
+  - curl
+runcmd:
+  - [git, clone, --depth, '1', --branch, '__SUMOFFICE_REF__', 'https://github.com/SumOfficeApp/sumoffice-docker', /opt/sumoffice]
+  - [env, 'SUMOFFICE_REF=__SUMOFFICE_REF__', bash, /opt/sumoffice/catalogs/vm/sumoffice-install.sh]
+  - [/usr/local/sbin/sumoffice-configure, --domain, '__DOMAIN__', --nextcloud-url, '__NEXTCLOUD_URL__']
+final_message: "SumOffice cloud-init finished after $UPTIME seconds"

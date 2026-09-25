@@ -5,7 +5,11 @@
     "category": "Productivity/Documents",
     "license": "LGPL-3",
     "author": "SumOffice",
-    "website": "https://github.com/SumOfficeApp/sumoffice-docker",
+    "maintainer": "SumOffice",
+    "website": "https://sumoffice.com",
+    "support": "hello@sumoffice.com",
+    "live_test_url": "https://view.sumoffice.com/view/cashflow/",
+    "images": ["static/description/screenshot-workbook.png"],
     "depends": ["mail"],
     "data": [
         "security/ir.model.access.csv",

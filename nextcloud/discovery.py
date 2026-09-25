@@ -12,14 +12,14 @@ class H(http.server.BaseHTTPRequestHandler):
         if self.path.startswith("/hosting/discovery"):
             a = fetch(A4 + "/hosting/discovery"); f = fetch(F1 + "/hosting/discovery")
             apps = re.findall(r"<app .*?</app>", a, re.S) + re.findall(r"<app .*?</app>", f, re.S)
-            # xlsm/xlsb для Nextcloud: те же urlsrc, что у xlsx; mime-имена как у Collabora
+            # xlsm/xlsb for Nextcloud: same urlsrc as xlsx, MIME names as Collabora uses them
             xl = [x for x in apps if 'name="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"' in x]
             extra = []
             if xl:
                 src = re.search(r'urlsrc="([^"]+)"', xl[0]).group(1)
                 for mime, ext in (("application/vnd.ms-excel.sheet.macroEnabled.12","xlsm"),("application/vnd.ms-excel.sheet.binary.macroEnabled.12","xlsb")):
-                    extra.append(f'<app name="{mime}"><action name="edit" default="true" urlsrc="{src}"/><action name="view" urlsrc="{src}"/></app><app name="calc"><action name="edit" ext="{ext}" default="true" urlsrc="{src}"/></app>')
-            # Nextcloud ждёт приложение Capabilities с адресом /hosting/capabilities (как у Collabora).
+                    extra.append(f'<app name="{mime}"><action name="edit" ext="{ext}" default="true" urlsrc="{src}"/><action name="view" ext="{ext}" urlsrc="{src}"/></app><app name="calc"><action name="edit" ext="{ext}" default="true" urlsrc="{src}"/></app>')
+            # Nextcloud expects a Capabilities app pointing at /hosting/capabilities, the way Collabora publishes it.
             extra.append(f'<app name="Capabilities"><action name="getinfo" ext="" default="true" urlsrc="{PUBLIC}/hosting/capabilities"/></app>')
             proof = re.search(r"<proof-key[^>]*/>|<proof-key.*?</proof-key>", a, re.S)
             body = '<?xml version="1.0" encoding="UTF-8"?><wopi-discovery><net-zone name="external-http">' + "".join(apps) + "".join(extra) + "</net-zone>" + (proof.group(0) if proof else "") + "</wopi-discovery>"

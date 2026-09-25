@@ -1,0 +1,103 @@
+{{- $fullname := include "sumoffice.fullname" . }}
+{{- $v := .Values.sumsheet }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}-sumsheet
+  labels:
+    {{- include "sumoffice.labels" . | nindent 4 }}
+    app.kubernetes.io/component: sumsheet
+spec:
+  # Cabins are local processes with local state: one replica, replaced whole.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "sumoffice.selectorLabels" (list . "sumsheet") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "sumoffice.selectorLabels" (list . "sumsheet") | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: sumsheet
+          image: {{ include "sumoffice.image" $v.image }}
+          imagePullPolicy: {{ $v.image.pullPolicy }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          command: ["sh", "/opt/sumoffice/start-sumsheet.sh"]
+          env:
+            - name: PUBLIC_URL
+              value: {{ include "sumoffice.publicUrl" . | quote }}
+            - name: WOPI_ALLOW
+              value: {{ include "sumoffice.wopiHostName" . | quote }}
+            - name: NEXTCLOUD_HOST
+              value: {{ include "sumoffice.wopiHostName" . | quote }}
+            - name: MAX_CABINS
+              value: {{ .Values.maxCabins | quote }}
+            - name: IDLE_MIN
+              value: {{ .Values.idleMin | quote }}
+            - name: SUMOFFICE_WOPI_PROOF_DIR
+              value: /data/proof
+          ports:
+            - name: http
+              containerPort: 8092
+              protocol: TCP
+          readinessProbe:
+            tcpSocket: { port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket: { port: http }
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            {{- toYaml $v.resources | nindent 12 }}
+          volumeMounts:
+            - { name: data, mountPath: /data/cabins, subPath: cabins }
+            - { name: data, mountPath: /data/wopi, subPath: wopi }
+            - { name: proof-key, mountPath: /data/proof, readOnly: true }
+            - { name: scripts, mountPath: /opt/sumoffice/start-sumsheet.sh, subPath: start-sumsheet.sh, readOnly: true }
+      volumes:
+        - name: data
+          {{- if $v.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ $fullname }}-sumsheet
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: proof-key
+          secret:
+            secretName: {{ include "sumoffice.proofSecretName" . }}
+            defaultMode: 0400
+        - name: scripts
+          configMap:
+            name: {{ $fullname }}
+      {{- with $v.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $v.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $v.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

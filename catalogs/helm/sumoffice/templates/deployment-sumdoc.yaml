@@ -1,0 +1,109 @@
+{{- $fullname := include "sumoffice.fullname" . }}
+{{- $v := .Values.sumdoc }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}-sumdoc
+  labels:
+    {{- include "sumoffice.labels" . | nindent 4 }}
+    app.kubernetes.io/component: sumdoc
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "sumoffice.selectorLabels" (list . "sumdoc") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "sumoffice.selectorLabels" (list . "sumdoc") | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      initContainers:
+        # SumDoc builds older than the shared proof key read <docs-dir>/wopi-proof.json:
+        # give them the same key as SumSheet (the same step as aio/start.sh).
+        - name: proof-key
+          image: {{ include "sumoffice.image" $v.image }}
+          imagePullPolicy: {{ $v.image.pullPolicy }}
+          command:
+            - node
+            - -e
+            - 'const fs=require("fs");const p=fs.readFileSync("/data/proof/proof-key.pem","utf8");fs.writeFileSync("/data/cabins/wopi-proof.json",JSON.stringify({current:{privatePem:p},old:{privatePem:p}}),{mode:0o600})'
+          volumeMounts:
+            - { name: data, mountPath: /data/cabins }
+            - { name: proof-key, mountPath: /data/proof, readOnly: true }
+      containers:
+        - name: sumdoc
+          image: {{ include "sumoffice.image" $v.image }}
+          imagePullPolicy: {{ $v.image.pullPolicy }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          args:
+            - --base-path
+            - /a4
+            - --max-cabins
+            - {{ .Values.maxCabins | quote }}
+            - --idle-min
+            - {{ .Values.idleMin | quote }}
+            - --wopi-hosts
+            - {{ include "sumoffice.wopiUrl" . | quote }}
+            - --public-url
+            - {{ printf "%s/a4" (include "sumoffice.publicUrl" .) | quote }}
+          env:
+            - name: SUMOFFICE_WOPI_PROOF_DIR
+              value: /data/proof
+          ports:
+            - name: http
+              containerPort: 8090
+              protocol: TCP
+          readinessProbe:
+            tcpSocket: { port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket: { port: http }
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            {{- toYaml $v.resources | nindent 12 }}
+          volumeMounts:
+            - { name: data, mountPath: /data/cabins }
+            - { name: proof-key, mountPath: /data/proof, readOnly: true }
+      volumes:
+        - name: data
+          {{- if $v.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ $fullname }}-sumdoc
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: proof-key
+          secret:
+            secretName: {{ include "sumoffice.proofSecretName" . }}
+            defaultMode: 0400
+      {{- with $v.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $v.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $v.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

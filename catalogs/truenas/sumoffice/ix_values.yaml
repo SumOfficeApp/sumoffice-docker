@@ -1,0 +1,11 @@
+images:
+  image:
+    repository: hissih/sumoffice-aio
+    tag: v1
+  container_utils_image:
+    repository: ixsystems/container-utils
+    tag: 1.0.2
+consts:
+  sumoffice_container_name: sumoffice
+  perms_container_name: permissions
+  internal_port: 8093

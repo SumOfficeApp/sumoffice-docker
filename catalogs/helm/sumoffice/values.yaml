@@ -1,0 +1,109 @@
+# Default values for the SumOffice chart.
+#
+# Layout (same as nextcloud/docker-compose.yml in this repository):
+#   front (nginx, :8093) -> /f1 SumSheet, /a4 SumDoc, /hosting/* joint WOPI discovery
+# Nextcloud Office allows exactly one editor origin, so both editors share one address.
+
+# -- Address the browser uses to reach the editors (the ingress host, with scheme). Required.
+publicUrl: "https://office.example.com"
+
+# -- The WOPI host (file storage) allowed to open files in the editors.
+wopiHost:
+  # -- Full origin of the storage, passed to SumDoc as --wopi-hosts. Required.
+  url: "https://cloud.example.com"
+  # -- Host name passed to SumSheet as WOPI_ALLOW / --wopi-allow. Empty = host part of wopiHost.url.
+  host: ""
+
+# -- Open documents per editor (one "cabin" process per user and document).
+maxCabins: 8
+# -- Minutes after which an idle cabin is closed.
+idleMin: 15
+
+nameOverride: ""
+fullnameOverride: ""
+
+imagePullSecrets: []
+
+# -- WOPI proof key. Both editors must sign with the ONE key published in discovery,
+# otherwise hosts that verify signatures (ownCloud Infinite Scale, OpenCloud, SharePoint) reject one editor.
+proofKey:
+  # -- Use an existing Secret with key `proof-key.pem` (RSA private key, PEM). Empty = the chart creates one.
+  existingSecret: ""
+  # -- PEM to put into the created Secret. Empty = generated once at install and kept on upgrade.
+  pem: ""
+
+sumsheet:
+  image:
+    repository: hissih/sumsheet-webhost
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    requests: { cpu: 250m, memory: 1Gi }
+    limits: { memory: 4Gi }
+  persistence:
+    enabled: true
+    storageClass: ""
+    accessModes: [ReadWriteOnce]
+    size: 5Gi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+sumdoc:
+  image:
+    repository: hissih/sumdoc-webhost
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    requests: { cpu: 250m, memory: 1Gi }
+    limits: { memory: 4Gi }
+  persistence:
+    enabled: true
+    storageClass: ""
+    accessModes: [ReadWriteOnce]
+    size: 5Gi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+discovery:
+  image:
+    repository: python
+    tag: 3.12-alpine
+    pullPolicy: IfNotPresent
+  resources:
+    requests: { cpu: 10m, memory: 32Mi }
+    limits: { memory: 128Mi }
+
+front:
+  image:
+    repository: nginx
+    tag: 1.27-alpine
+    pullPolicy: IfNotPresent
+  # -- Maximum upload size through the front.
+  clientMaxBodySize: 200m
+  resources:
+    requests: { cpu: 10m, memory: 32Mi }
+    limits: { memory: 128Mi }
+
+service:
+  type: ClusterIP
+  port: 8093
+
+ingress:
+  enabled: false
+  className: ""
+  # -- WebSocket and long sessions: raise timeouts for your controller (ingress-nginx example below).
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-body-size: "200m"
+  hosts:
+    - host: office.example.com
+  tls: []
+  #  - secretName: office-example-com-tls
+  #    hosts: [office.example.com]
+
+podSecurityContext: {}
+securityContext: {}
+podAnnotations: {}

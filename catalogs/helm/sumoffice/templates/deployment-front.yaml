@@ -1,0 +1,97 @@
+{{- $fullname := include "sumoffice.fullname" . }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}-discovery
+  labels:
+    {{- include "sumoffice.labels" . | nindent 4 }}
+    app.kubernetes.io/component: discovery
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "sumoffice.selectorLabels" (list . "discovery") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "sumoffice.selectorLabels" (list . "discovery") | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: discovery
+          image: {{ include "sumoffice.image" .Values.discovery.image }}
+          imagePullPolicy: {{ .Values.discovery.image.pullPolicy }}
+          command: ["python3", "/opt/sumoffice/discovery.py"]
+          env:
+            - name: PUBLIC_URL
+              value: {{ include "sumoffice.publicUrl" . | quote }}
+            - name: SUMDOC_URL
+              value: {{ printf "http://%s-sumdoc:8090" $fullname | quote }}
+            - name: SUMSHEET_URL
+              value: {{ printf "http://%s-sumsheet:8092" $fullname | quote }}
+            - name: PORT
+              value: "8093"
+          ports:
+            - name: http
+              containerPort: 8093
+              protocol: TCP
+          readinessProbe:
+            tcpSocket: { port: http }
+          resources:
+            {{- toYaml .Values.discovery.resources | nindent 12 }}
+          volumeMounts:
+            - { name: scripts, mountPath: /opt/sumoffice/discovery.py, subPath: discovery.py, readOnly: true }
+      volumes:
+        - name: scripts
+          configMap:
+            name: {{ $fullname }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}-front
+  labels:
+    {{- include "sumoffice.labels" . | nindent 4 }}
+    app.kubernetes.io/component: front
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "sumoffice.selectorLabels" (list . "front") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "sumoffice.selectorLabels" (list . "front") | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: front
+          image: {{ include "sumoffice.image" .Values.front.image }}
+          imagePullPolicy: {{ .Values.front.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8093
+              protocol: TCP
+          readinessProbe:
+            httpGet: { path: /health, port: http }
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.front.resources | nindent 12 }}
+          volumeMounts:
+            - { name: scripts, mountPath: /etc/nginx/conf.d/default.conf, subPath: default.conf, readOnly: true }
+      volumes:
+        - name: scripts
+          configMap:
+            name: {{ $fullname }}

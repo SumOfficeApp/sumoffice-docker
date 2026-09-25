@@ -1,0 +1,36 @@
+{{- $fullname := include "sumoffice.fullname" . }}
+{{- range $c := list (dict "name" "sumsheet" "port" 8092) (dict "name" "sumdoc" "port" 8090) (dict "name" "discovery" "port" 8093) }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullname }}-{{ $c.name }}
+  labels:
+    {{- include "sumoffice.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $c.name }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: {{ $c.port }}
+      targetPort: http
+      protocol: TCP
+  selector:
+    {{- include "sumoffice.selectorLabels" (list $ $c.name) | nindent 4 }}
+---
+{{- end }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullname }}
+  labels:
+    {{- include "sumoffice.labels" . | nindent 4 }}
+    app.kubernetes.io/component: front
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+  selector:
+    {{- include "sumoffice.selectorLabels" (list . "front") | nindent 4 }}

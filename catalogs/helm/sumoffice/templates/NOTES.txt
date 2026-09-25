@@ -1,0 +1,27 @@
+SumOffice is starting: SumSheet at /f1, SumDoc at /a4, WOPI discovery at /hosting/discovery.
+
+Public address: {{ include "sumoffice.publicUrl" . }}
+WOPI host allowed: {{ include "sumoffice.wopiUrl" . }} (host {{ include "sumoffice.wopiHostName" . }})
+
+{{- if .Values.ingress.enabled }}
+
+Check discovery:
+  curl -s {{ include "sumoffice.publicUrl" . }}/hosting/discovery | head -c 300
+{{- else }}
+
+No ingress is enabled. Check locally:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "sumoffice.fullname" . }} 8093:{{ .Values.service.port }}
+  curl -s http://127.0.0.1:8093/hosting/discovery | head -c 300
+Your TLS proxy must forward {{ include "sumoffice.publicUrl" . }} to this service with WebSocket upgrades on.
+{{- end }}
+
+Connect Nextcloud Office (run on the Nextcloud host):
+  php occ config:app:set richdocuments wopi_url --value "{{ include "sumoffice.publicUrl" . }}"
+  php occ config:app:set richdocuments public_wopi_url --value "{{ include "sumoffice.publicUrl" . }}"
+  php occ richdocuments:activate-config
+
+The WOPI proof key lives in Secret {{ include "sumoffice.proofSecretName" . }}; it is kept on uninstall
+(helm.sh/resource-policy: keep). Delete it by hand only if you want a new key.
+
+Licence: the images are free for evaluation; production use inside an organisation is licensed
+per application, see https://sumoffice.com/download#server

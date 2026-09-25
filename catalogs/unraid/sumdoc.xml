@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>SumDoc</Name>
+  <Repository>hissih/sumdoc-webhost:latest</Repository>
+  <Registry>https://hub.docker.com/r/hissih/sumdoc-webhost</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/SumOfficeApp/sumoffice-docker/issues</Support>
+  <Project>https://github.com/SumOfficeApp/sumoffice-docker</Project>
+  <Overview>SumDoc standalone: a Word-compatible browser editor (.docx round-trip) for your own system, without Nextcloud. Your system answers two URLs: an auth URL (200 for a signed-in user) and an attachment URL (file bytes by id). Edit both in Post Arguments (advanced view) before the first start.[br][br]
+For Nextcloud use the SumOffice template instead.[br][br]
+The image is free for evaluation; production use inside an organisation is licensed per application: https://sumoffice.com/download#server</Overview>
+  <Category>Productivity:</Category>
+  <WebUI>http://[IP]:[PORT:8090]/a4/health</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/SumOfficeApp/sumoffice-docker/main/catalogs/unraid/sumdoc.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/SumOfficeApp/sumoffice-docker/main/catalogs/unraid/sumdoc.png</Icon>
+  <ExtraParams/>
+  <PostArgs>--base-path /a4 --max-cabins 12 --idle-min 20 --auth-url https://your-system/v1/me --attach-url https://your-system/v1/attachments/{id}/content</PostArgs>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires>Your own system that implements the auth URL and attachment URL contract (see https://docs.sumoffice.com).</Requires>
+  <Config Name="Editor port" Target="8090" Default="8090" Mode="tcp" Description="SumDoc web port." Type="Port" Display="always" Required="true" Mask="false">8090</Config>
+  <Config Name="Cabins" Target="/data/cabins" Default="/mnt/user/appdata/sumdoc" Mode="rw" Description="Workspace of open documents." Type="Path" Display="advanced" Required="true" Mask="false">/mnt/user/appdata/sumdoc</Config>
+</Container>

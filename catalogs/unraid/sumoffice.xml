@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>SumOffice</Name>
+  <Repository>hissih/sumoffice-aio:v1</Repository>
+  <Registry>https://hub.docker.com/r/hissih/sumoffice-aio</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/SumOfficeApp/sumoffice-docker/issues</Support>
+  <Project>https://github.com/SumOfficeApp/sumoffice-docker</Project>
+  <Overview>SumOffice adds Excel- and Word-compatible browser editors to Nextcloud Office and other WOPI hosts: SumSheet for workbooks (.xlsx, .xlsm, .xlsb; VBA kept) at /f1 and SumDoc for documents (.docx) at /a4, with a joint WOPI discovery at /hosting/discovery, all on one port.[br][br]
+After install: in Nextcloud open Administration settings, Office, "Use your own server" and enter the Public URL below. Put a TLS reverse proxy (with WebSocket support) in front of the port if Nextcloud uses https.[br][br]
+Needs about 2 GB RAM plus about 250 MB per open document. The image is free for evaluation; production use inside an organisation is licensed per application: https://sumoffice.com/download#server</Overview>
+  <Category>Productivity: Cloud:</Category>
+  <WebUI>http://[IP]:[PORT:8093]/hosting/discovery</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/SumOfficeApp/sumoffice-docker/main/catalogs/unraid/sumoffice.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/SumOfficeApp/sumoffice-docker/main/catalogs/unraid/sumoffice.png</Icon>
+  <ExtraParams>--memory=4g</ExtraParams>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires>A WOPI host such as Nextcloud with the Nextcloud Office (richdocuments) app. Disable any Collabora server connected to the same Nextcloud Office app.</Requires>
+  <Config Name="Editor port" Target="8093" Default="8093" Mode="tcp" Description="Port of the editors and the WOPI discovery." Type="Port" Display="always" Required="true" Mask="false">8093</Config>
+  <Config Name="Data" Target="/data" Default="/mnt/user/appdata/sumoffice" Mode="rw" Description="Editor workspace and the WOPI proof key shared by both editors." Type="Path" Display="advanced" Required="true" Mask="false">/mnt/user/appdata/sumoffice</Config>
+  <Config Name="Public URL" Target="PUBLIC_URL" Default="http://tower.local:8093" Mode="" Description="Address the browser uses to reach the editors, with scheme and without a trailing slash (for example https://office.example.com)." Type="Variable" Display="always" Required="true" Mask="false">http://tower.local:8093</Config>
+  <Config Name="WOPI host name" Target="NEXTCLOUD_HOST" Default="" Mode="" Description="Host name of your Nextcloud (the file storage allowed to open files), without scheme. Passed to SumSheet as --wopi-allow." Type="Variable" Display="always" Required="true" Mask="false"/>
+  <Config Name="WOPI host URL" Target="NEXTCLOUD_URL" Default="" Mode="" Description="Full origin of the same Nextcloud (for example https://cloud.example.com). Empty means https://[WOPI host name]. Passed to SumDoc as --wopi-hosts." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="Open documents per editor" Target="MAX_CABINS" Default="8" Mode="" Description="Each open document is one process of about 250 MB RAM." Type="Variable" Display="advanced" Required="false" Mask="false">8</Config>
+</Container>

@@ -1,0 +1,23 @@
+{{- $fullname := include "sumoffice.fullname" . }}
+{{- range $name := list "sumsheet" "sumdoc" }}
+{{- $p := (index $.Values $name).persistence }}
+{{- if $p.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $fullname }}-{{ $name }}
+  labels:
+    {{- include "sumoffice.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+spec:
+  accessModes:
+    {{- toYaml $p.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ $p.size }}
+  {{- if $p.storageClass }}
+  storageClassName: {{ $p.storageClass | quote }}
+  {{- end }}
+---
+{{- end }}
+{{- end }}

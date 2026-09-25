@@ -1,0 +1,6 @@
+[
+    {"route": "/SumOffice/wopi/files/:id", "method": "get", "actionClassName": "Espo\\Modules\\SumOffice\\Api\\CheckFileInfo", "noAuth": true},
+    {"route": "/SumOffice/wopi/files/:id", "method": "post", "actionClassName": "Espo\\Modules\\SumOffice\\Api\\Locks", "noAuth": true},
+    {"route": "/SumOffice/wopi/files/:id/contents", "method": "get", "actionClassName": "Espo\\Modules\\SumOffice\\Api\\GetFile", "noAuth": true},
+    {"route": "/SumOffice/wopi/files/:id/contents", "method": "post", "actionClassName": "Espo\\Modules\\SumOffice\\Api\\PutFile", "noAuth": true}
+]

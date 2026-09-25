@@ -1,0 +1,6 @@
+{
+    "extensionMimeTypeMap": {
+        "xlsm": ["application/vnd.ms-excel.sheet.macroEnabled.12"],
+        "xlsb": ["application/vnd.ms-excel.sheet.binary.macroEnabled.12"]
+    }
+}

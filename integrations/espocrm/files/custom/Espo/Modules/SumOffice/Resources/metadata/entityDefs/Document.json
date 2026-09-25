@@ -1,0 +1,8 @@
+{
+    "fields": {
+        "file": {
+            "view": "sum-office:views/fields/sumoffice-file",
+            "accept": ["__APPEND__", ".xlsm", ".xlsb"]
+        }
+    }
+}

@@ -11,13 +11,17 @@ services:
   sumsheet:
     image: hissih/sumsheet-webhost:latest
     restart: unless-stopped
-    volumes: ["sumsheet-cabins:/data/cabins", "sumsheet-wopi:/data/wopi", "./start-sumsheet.sh:/start.sh:ro"]
+    volumes: ["sumsheet-cabins:/data/cabins", "sumsheet-wopi:/data/wopi", "./proof-key.pem:/data/wopi/proof-key.pem:ro", "./start-sumsheet.sh:/start.sh:ro"]
     environment: { PUBLIC_URL: "${PUBLIC_URL}", NEXTCLOUD_HOST: "${NEXTCLOUD_HOST}" }
     entrypoint: ["sh", "/start.sh"]
   sumdoc:
     image: hissih/sumdoc-webhost:latest
     restart: unless-stopped
-    volumes: ["sumdoc-cabins:/data/cabins"]
+    volumes: ["sumdoc-cabins:/data/cabins", "./wopi-proof.json:/data/cabins/wopi-proof.json:ro"]
+    # One signing key for the whole stack (see sdelat-proof-klyuch.sh): the merged
+    # /hosting/discovery can carry only one key, yet both editors sign. Different
+    # keys mean half the calls fail verification on a host that does verify —
+    # Odoo by default, SharePoint always.
     command: ["--base-path", "/a4", "--max-cabins", "8", "--idle-min", "15",
               "--wopi-hosts", "${NEXTCLOUD_URL}", "--public-url", "${PUBLIC_URL}/a4"]
   discovery:

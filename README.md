@@ -11,9 +11,16 @@ Nextcloud Office allows one editor origin, so both editors sit behind one nginx:
 ```sh
 git clone https://github.com/SumOfficeApp/sumoffice-docker && cd sumoffice-docker/nextcloud
 cp env.example .env            # PUBLIC_URL = the address you give this stack; NEXTCLOUD_URL = your Nextcloud
+                               # NEXTCLOUD_HOST is a bare hostname — no scheme, no port
+sh sdelat-proof-klyuch.sh      # one signing key for both editors, once
 docker compose up -d           # 1. start the editors (put your TLS proxy in front of :8093)
 sh nextcloud-occ.sh https://office.example.com   # 2. on the Nextcloud host: three occ settings, one activation
 ```
+
+`sdelat-proof-klyuch.sh` matters for any host that verifies WOPI signatures — Odoo does by default,
+SharePoint always. The two editors each sign with their own key otherwise, while the shared
+`/hosting/discovery` can carry only one: the host then rejects everything the other editor signed.
+Nextcloud Office does not verify signatures, so this step is invisible there and bites elsewhere.
 
 3. Open any `.xlsx`, `.xlsm` or `.docx` in Nextcloud Files. It opens in the real engine; Save writes the same file back.
 

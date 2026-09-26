@@ -1,0 +1,4 @@
+
+# Ключ подписи WOPI создаётся на месте (sdelat-proof-klyuch.sh) и наружу не выкладывается.
+nextcloud/proof-key.pem
+nextcloud/wopi-proof.json

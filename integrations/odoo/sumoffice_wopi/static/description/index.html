@@ -2,12 +2,67 @@
   <div class="oe_row oe_spaced">
     <h2 class="oe_slogan">Edit Excel and Word attachments without leaving Odoo</h2>
     <h3 class="oe_slogan">.xlsx, .xlsm, .xlsb and .docx open in SumOffice; Ctrl+S saves back into the attachment</h3>
-    <p>Macros travel with the file. Excel and Word open the result without a repair dialog. The file stays in Odoo; every edit runs with the rights of the person who opened it.</p>
-    <ul>
-      <li>An <b>Open in SumOffice</b> button on office attachments in the chatter</li>
-      <li>WOPI host inside Odoo: CheckFileInfo, GetFile, PutFile, locks</li>
-      <li>Signed access tokens and verified WOPI proof keys</li>
-    </ul>
-    <p>Requires a SumOffice server: <a href="https://github.com/SumOfficeApp/sumoffice-docker">github.com/SumOfficeApp/sumoffice-docker</a></p>
+    <p class="oe_mt32">
+      Excel and Word files keep working — macros, Power Query, files back intact — with the SumOffice
+      editors as your Office server. The file stays in Odoo: every read and every write runs with the
+      rights of the person who opened it, and the macro project travels with the workbook byte for byte.
+    </p>
+  </div>
+</section>
+
+<section class="oe_container oe_dark">
+  <div class="oe_row oe_spaced">
+    <h3 class="oe_slogan">A workbook with macros, open in the browser</h3>
+    <div class="oe_span12">
+      <img src="screenshot-workbook.png" class="oe_picture oe_screenshot" alt="A macro-enabled workbook open in SumSheet"/>
+    </div>
+  </div>
+</section>
+
+<section class="oe_container">
+  <div class="oe_row oe_spaced">
+    <h3 class="oe_slogan">Word documents keep their pictures and layout</h3>
+    <div class="oe_span12">
+      <img src="screenshot-document.png" class="oe_picture oe_screenshot" alt="A Word document open in SumDoc"/>
+    </div>
+  </div>
+</section>
+
+<section class="oe_container oe_dark">
+  <div class="oe_row oe_spaced">
+    <div class="oe_span6">
+      <h3 class="oe_slogan">What the module adds</h3>
+      <ul>
+        <li>An <b>Open in SumOffice</b> button on office attachments in the chatter</li>
+        <li>A WOPI host inside Odoo: CheckFileInfo, GetFile, PutFile, locks</li>
+        <li>Signed access tokens and verified WOPI proof keys</li>
+        <li>Editing rights follow the Odoo record: no separate user list to keep</li>
+      </ul>
+    </div>
+    <div class="oe_span6">
+      <h3 class="oe_slogan">What it needs</h3>
+      <ul>
+        <li>Odoo 18</li>
+        <li>A SumOffice server reachable by the browser and by Odoo</li>
+        <li>One setting: the address of that server</li>
+      </ul>
+      <p>
+        The server is published as ready-to-run containers with a single glue for both editors;
+        the same server also answers Nextcloud, ownCloud and other WOPI hosts.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="oe_container">
+  <div class="oe_row oe_spaced">
+    <h3 class="oe_slogan">Proven, and what that means</h3>
+    <p>
+      Round trip on a live Odoo 18 stand: a macro-enabled workbook and a Word document were opened,
+      edited and saved back. The VBA project came back <b>byte for byte</b>, and every picture in the
+      document came back byte for byte. Speed figures are not published here, because they depend on
+      your own server.
+    </p>
+    <p>Questions and licensing: <a href="mailto:hello@sumoffice.com">hello@sumoffice.com</a></p>
   </div>
 </section>

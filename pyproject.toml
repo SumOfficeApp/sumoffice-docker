@@ -1,0 +1,17 @@
+[project]
+name = "sumoffice"
+authors = [{ name = "SumOffice", email = "hello@sumoffice.com" }]
+description = "Open and edit Excel and Word attachments in SumOffice over WOPI"
+requires-python = ">=3.10"
+readme = "README.md"
+license = "AGPL-3.0-or-later"
+dynamic = ["version"]
+dependencies = []
+
+[project.urls]
+Homepage = "https://sumoffice.com"
+Support = "mailto:hello@sumoffice.com"
+
+[build-system]
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"

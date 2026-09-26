@@ -1,11 +1,11 @@
 <?php
 /*
- * SumOffice for SuiteCRM — WOPI endpoints (public/legacy/sumoffice_wopi.php).
+ * SumOffice for SuiteCRM — WOPI endpoints (custom/modules/SumOffice/wopi.php).
  *
- *   GET  sumoffice_wopi.php/{revisionId}            CheckFileInfo
- *   POST sumoffice_wopi.php/{revisionId}            LOCK / UNLOCK / REFRESH_LOCK / GET_LOCK
- *   GET  sumoffice_wopi.php/{revisionId}/contents   GetFile
- *   POST sumoffice_wopi.php/{revisionId}/contents   PutFile (X-WOPI-Override: PUT)
+ *   GET  custom/modules/SumOffice/wopi.php/{revisionId}            CheckFileInfo
+ *   POST custom/modules/SumOffice/wopi.php/{revisionId}            LOCK / UNLOCK / REFRESH_LOCK / GET_LOCK
+ *   GET  custom/modules/SumOffice/wopi.php/{revisionId}/contents   GetFile
+ *   POST custom/modules/SumOffice/wopi.php/{revisionId}/contents   PutFile (X-WOPI-Override: PUT)
  *
  * The file id is in the path, so the editor's "/contents" suffix lands where MS-WOPI expects it.
  */

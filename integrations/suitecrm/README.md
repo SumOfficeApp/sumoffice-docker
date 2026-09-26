@@ -57,3 +57,20 @@ Tested on SuiteCRM 8.9.1 (PHP 8.3) with the SumOffice stack, 25.09.2026:
   - a token for another revision → `401`
   - a broken token or no token → `401`
   - a path outside `{revisionId}[/contents]` → `404`
+
+## What 1.0.6 changed, and why the store needed it
+
+`dist/sumoffice-suitecrm-1.0.6.zip` is the package the SuiteCRM store holds. Three things in it are
+store requirements rather than product decisions, and they are easy to undo by accident:
+
+- **The licence gate.** `files/modules/SumOffice/license/` carries the SugarOutfitters licence client
+  (`api_url` `https://store.suitecrm.com/api/v1`, the add-on's public key, `isValid()`), and
+  `SumOfficeLicenseGate.php` checks it. The store will not list an add-on that does not validate the
+  licence it sells.
+- **The detail-view row is merged, not overwritten.** Earlier versions shipped their own
+  `custom/modules/Documents/metadata/detailviewdefs.php`, which replaced whatever the customer already
+  had there. `files/scripts/post_install.php` now backs up the existing file and inserts one row into
+  it. That is why the package no longer contains a `detailviewdefs.php` of its own.
+- **Everything installs under `custom/`.** Module Loader rejects a package that writes outside it.
+
+Plans in the store are recorded in the channels registry, not here.

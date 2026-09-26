@@ -1,7 +1,7 @@
 {
   "id": "5b1d6a52-7f7e-4c0e-9a7b-3f2d0c8e9b41",
-  "version": "1.0.1",
-  "requiredApiVersion": "^1.44.0",
+  "version": "1.0.2",
+  "requiredApiVersion": "^1.66.0",
   "iconFile": "icon.png",
   "author": {
     "name": "SumOffice",
@@ -10,7 +10,7 @@
   },
   "name": "SumOffice",
   "nameSlug": "sumoffice",
-  "classFile": "SumOfficeApp.js",
+  "classFile": "SumOfficeApp.ts",
   "description": "Open .xlsx, .xlsm, .xlsb and .docx files from messages in SumOffice (SumSheet, SumDoc). Ctrl+S posts the edited file back into the room.",
   "implements": [],
   "permissions": [

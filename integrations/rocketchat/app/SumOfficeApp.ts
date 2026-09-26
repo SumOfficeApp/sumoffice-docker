@@ -7,13 +7,12 @@
 //   POST /save  — the bridge says a new version is ready; the app fetches it from the
 //                 bridge and posts it into the room as the person who edited it.
 // Every call between the two is signed with the shared secret from the app settings.
-"use strict";
 
-const { App } = require("@rocket.chat/apps-engine/definition/App");
-const { ApiEndpoint, ApiVisibility, ApiSecurity } = require("@rocket.chat/apps-engine/definition/api");
-const { SettingType } = require("@rocket.chat/apps-engine/definition/settings");
-const { UIActionButtonContext } = require("@rocket.chat/apps-engine/definition/ui");
-const crypto = require("crypto");
+import { App } from "@rocket.chat/apps-engine/definition/App";
+import { ApiEndpoint, ApiVisibility, ApiSecurity } from "@rocket.chat/apps-engine/definition/api";
+import { SettingType } from "@rocket.chat/apps-engine/definition/settings";
+import { UIActionButtonContext } from "@rocket.chat/apps-engine/definition/ui";
+import * as crypto from "crypto";
 
 const EXTENSIONS = ["xlsx", "xlsm", "xlsb", "docx"];
 const TICKET_TTL = 300;   // seconds: the link in the dialog is opened right away
@@ -94,7 +93,7 @@ class SaveEndpoint extends ApiEndpoint {
   }
 }
 
-class SumOfficeApp extends App {
+export class SumOfficeApp extends App {
   async extendConfiguration(configuration) {
     await configuration.settings.provideSetting({
       id: "bridge_url", type: SettingType.STRING, packageValue: "", required: true, public: false,
@@ -122,7 +121,7 @@ class SumOfficeApp extends App {
     const data = context.getInteractionData();
     const responder = context.getInteractionResponder();
     const file = data.message && data.message.file;
-    const say = (text, blocks) => responder.openModalViewResponse({
+    const say = (text: string, blocks?: any) => responder.openModalViewResponse({
       title: { type: "plain_text", text: "SumOffice" },
       blocks: [{ type: "section", text: { type: "plain_text", text } }].concat(blocks || []),
     });
@@ -149,4 +148,4 @@ class SumOfficeApp extends App {
   }
 }
 
-module.exports = { SumOfficeApp };
+

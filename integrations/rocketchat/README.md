@@ -4,7 +4,7 @@
 
 There are two parts:
 
-- **`app/`** — a Rocket.Chat app (Apps-Engine, plain JavaScript, no build step). It adds the menu item and the dialog with the link. It is the only part that reads uploads and posts new versions in Rocket.Chat.
+- **`app/`** — a Rocket.Chat app (Apps-Engine, TypeScript; their Marketplace compiler is what builds it). It adds the menu item and the dialog with the link. It is the only part that reads uploads and posts new versions in Rocket.Chat.
 - **`bridge/`** — a small WOPI host (Node 20+, no dependencies) that SumOffice talks to. It never touches Rocket.Chat's database or REST API.
 
 Why two parts: Rocket.Chat app endpoints accept only small JSON bodies (`body-parser` json/urlencoded, 100 KB). A file saved by the editor cannot reach the app directly, so the bridge keeps it and the app collects it.
@@ -86,3 +86,27 @@ Tested on Rocket.Chat 7.10.0 Community with the SumOffice stack, 25.09.2026:
 - **Stand-only workarounds.**
   - The stand workspace is not registered. To enable the private app anyway, the app record was marked `migrated` and re-signed with the server's own key. A registered workspace needs neither step.
   - Rocket.Chat 7 locks message sending until it can reach its Cloud, so the stand also needed the network proxy's CA.
+
+## Publishing to the Marketplace
+
+The Marketplace does not accept the package their own CLI produces by default. Their side runs
+`@rocket.chat/apps-compiler@0.7.0`, and that build is stricter than a local one. Fourteen submissions
+were refused before this set went through — it is in `app/` and shipped as
+`dist/sumoffice-rocketchat-1.0.14.zip`:
+
+| What | Value | Why |
+|---|---|---|
+| `app.json` → `classFile` | `SumOfficeApp.ts` | Their compiler resolves the class file as TypeScript; a `.js` entry is not found |
+| `app.json` → `requiredApiVersion` | `^1.31.0` | The engine version their compiler pins |
+| `devDependencies` | `@rocket.chat/apps-engine` **1.31.0**, `typescript` 5.3.3 | An exact engine version, not a range |
+| `dependencies` | `@rocket.chat/ui-kit` `^0.36.1`, `@types/node` `18.11.18` | Their build does not resolve transitive dependencies: everything the engine imports has to be declared here |
+
+Package with **`rc-apps package --no-compile`** — without that flag the CLI compiles first and the
+uploaded bundle no longer matches what their compiler expects.
+
+Their error text does not appear in the submission dialog. It is in the build log of the version in
+the publisher console; open the version, not the app.
+
+To reproduce their build before submitting, run `AppsCompiler` from
+`@rocket.chat/apps-compiler@0.7.0` over the app directory locally — it fails the same way theirs
+does, in seconds, without spending a submission.

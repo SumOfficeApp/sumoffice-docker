@@ -1,12 +1,15 @@
 {
   "name": "sumoffice",
-  "version": "1.0.2",
+  "version": "1.0.14",
   "description": "Open .xlsx, .xlsm, .xlsb and .docx files from messages in SumOffice and save them back into the room.",
   "private": true,
   "license": "SEE LICENSE IN https://sumoffice.com/licensing.html",
   "devDependencies": {
-    "@rocket.chat/apps-engine": "^1.66.0",
-    "@types/node": "^26.6.3",
-    "typescript": "^5.9.3"
+    "@rocket.chat/apps-engine": "1.31.0",
+    "typescript": "5.3.3"
+  },
+  "dependencies": {
+    "@rocket.chat/ui-kit": "^0.36.1",
+    "@types/node": "18.11.18"
   }
 }

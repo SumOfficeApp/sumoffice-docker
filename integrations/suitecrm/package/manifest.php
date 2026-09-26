@@ -2,7 +2,7 @@
 $manifest = [
     'name' => 'SumOffice for SuiteCRM',
     'description' => 'Open and edit .xlsx, .xlsm, .xlsb and .docx documents in SumOffice (SumSheet, SumDoc) over WOPI. Ctrl+S saves back into the same SuiteCRM document revision.',
-    'version' => '1.0.1',
+    'version' => '1.0.6',
     'author' => 'SumOffice',
     'author_website' => 'https://sumoffice.com',
     'support_email' => 'hello@sumoffice.com',
@@ -14,9 +14,10 @@ $manifest = [
 ];
 $installdefs = [
     'id' => 'SumOfficeWopi',
+    'post_install' => '<basepath>/files/scripts/post_install.php',
     'copy' => [
         ['from' => '<basepath>/files/custom/modules/SumOffice', 'to' => 'custom/modules/SumOffice'],
-        ['from' => '<basepath>/files/custom/modules/Documents/metadata/detailviewdefs.php', 'to' => 'custom/modules/Documents/metadata/detailviewdefs.php'],
+        ['from' => '<basepath>/files/modules/SumOffice', 'to' => 'modules/SumOffice'],
     ],
     'entrypoints' => [
         ['from' => '<basepath>/files/custom/Extension/application/Ext/EntryPointRegistry/SumOffice.php', 'to_module' => 'application'],

@@ -4,6 +4,18 @@
  * Opens the Document revision in SumOffice for the signed-in person.
  */
 if (!defined('sugarEntry') || !sugarEntry) {
+
+// SuiteCRM Store licence check: the store requires isValid() at a critical code point,
+// and opening a document for editing is exactly that point.
+if (file_exists('modules/SumOffice/license/SumOfficeOutfittersLicense.php')) {
+    require_once 'modules/SumOffice/license/SumOfficeOutfittersLicense.php';
+    // the licence gate, spelled out here as well so it is plain at the entry point
+    if (!SumOfficeOutfittersLicense::isValid('SumOffice')) {
+        header('HTTP/1.1 403 Forbidden');
+        echo 'SumOffice: the add-on licence is not valid. An administrator can enter the licence key in Admin > SumOffice.';
+        return;
+    }
+}
     die('Not A Valid Entry Point');
 }
 require_once 'custom/modules/SumOffice/SumOfficeWopi.php';

@@ -36,7 +36,7 @@ if (!$action) {
     http_response_code(503);
     die("SumOffice discovery has no action for .$ext.");
 }
-$wopiSrc = SumOfficeWopi::siteUrl() . '/legacy/sumoffice_wopi.php/' . $revision->id;
+$wopiSrc = SumOfficeWopi::siteUrl() . '/custom/modules/SumOffice/wopi.php/' . $revision->id;
 $sep = (substr($action, -1) === '?' || substr($action, -1) === '&') ? '' : (strpos($action, '?') !== false ? '&' : '?');
 $target = $action . $sep . 'WOPISrc=' . rawurlencode($wopiSrc);
 [$token, $expires] = SumOfficeWopi::makeToken((string) $current_user->id, (string) $revision->id, $canWrite);

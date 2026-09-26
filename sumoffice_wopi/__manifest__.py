@@ -1,7 +1,7 @@
 {
-    "name": "SumOffice for Odoo",
-    "summary": "Open and edit xlsx, xlsm, xlsb and docx attachments in SumOffice (SumSheet, SumDoc) over WOPI",
-    "version": "18.0.1.0.0",
+    "name": "Excel & Word Attachment Editor (SumOffice)",
+    "summary": "Edit Excel and Word attachments in Odoo — xlsx, xlsm, xlsb, docx; VBA macros kept",
+    "version": "18.0.1.0.1",
     "category": "Productivity/Documents",
     "license": "LGPL-3",
     "author": "SumOffice",

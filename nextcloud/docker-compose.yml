@@ -9,13 +9,13 @@
 name: sumoffice-nextcloud
 services:
   sumsheet:
-    image: hissih/sumsheet-webhost:latest
+    image: hissih/sumsheet-webhost:2026.09.27-amd64
     restart: unless-stopped
     volumes: ["sumsheet-cabins:/data/cabins", "sumsheet-wopi:/data/wopi", "./proof-key.pem:/data/wopi/proof-key.pem:ro", "./start-sumsheet.sh:/start.sh:ro"]
     environment: { PUBLIC_URL: "${PUBLIC_URL}", NEXTCLOUD_HOST: "${NEXTCLOUD_HOST}" }
     entrypoint: ["sh", "/start.sh"]
   sumdoc:
-    image: hissih/sumdoc-webhost:latest
+    image: hissih/sumdoc-webhost:2026.09.27-amd64
     restart: unless-stopped
     volumes: ["sumdoc-cabins:/data/cabins", "./wopi-proof.json:/data/cabins/wopi-proof.json:ro"]
     # One signing key for the whole stack (see sdelat-proof-klyuch.sh): the merged

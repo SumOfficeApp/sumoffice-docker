@@ -2,7 +2,13 @@
 
 Excel and Word editors you run yourself. Files stay real `.xlsx`/`.xlsm`/`.docx`; macros and Power Query travel with the file; Excel and Word open the result without a repair dialog. Measured on a real corpus — https://sumoffice.com/nextcloud
 
-Images (Docker Hub, `hissih/`): `sumsheet-webhost` (Excel-compatible), `sumdoc-webhost` (Word-compatible), `sumoffice-preview` (read-only previews), `sumoffice-mcp` (server for AI agents — https://github.com/SumOfficeApp/sumoffice-mcp).
+Images (Docker Hub, `hissih/`): `sumsheet-webhost` (Excel-compatible), `sumdoc-webhost` (Word-compatible), `sumoffice-preview` (read-only previews), `sumoffice-docsapi` (self-hosted document server for compatible connectors), `sumoffice-mcp` (server for AI agents — https://github.com/SumOfficeApp/sumoffice-mcp).
+
+The measured 27 September release is pinned as `2026.09.27-amd64`. It is a complete
+`linux/amd64` build from SumSheet `3165c9c851996afc4df958d7ec6f648ecf504952`,
+SumDoc `4bbbfa75eda253b14dda00a6d1ffc6734d55bf90`, and DocsAPI
+`7e41326e0a34198f4821015f79e3aaae1bd5fb53`. It was run on an Apple Silicon Mac
+under Docker's x86-64 emulation; an arm64 image is not part of this release.
 
 ## Nextcloud — three steps
 
@@ -26,6 +32,12 @@ Nextcloud Office does not verify signatures, so this step is invisible there and
 
 Tested with Nextcloud 29–32 and Nextcloud Office (richdocuments) ≥ 8. The optional installer app that sets the three settings from the Nextcloud UI: https://github.com/SumOfficeApp/sumoffice-nextcloud
 
+## Self-hosted document server
+
+For systems that already use a compatible document-server connector, use
+[`document-server/`](document-server/README.md). It includes DocsAPI, both editors,
+preview generation, one discovery endpoint, and the reverse-proxy front.
+
 ## Standalone
 
 One editor without Nextcloud, talking to your own system for users and files: `standalone/README.md`.
@@ -33,7 +45,8 @@ One editor without Nextcloud, talking to your own system for users and files: `s
 ## What does not survive yet (honestly)
 
 - Power Query is preserved, not refreshed, in the browser editor; refresh is in the desktop app.
-- One editor per document at a time in the browser; a second person gets read-only.
+- Concurrent editing is measured through WOPI on Nextcloud 31. Other host adapters
+  need their own acceptance run before you rely on concurrent editing there.
 - Macros routed "Excel bridge" (COM automation, some ActiveX) stay in Excel; the report names each one.
 
 ## Licence

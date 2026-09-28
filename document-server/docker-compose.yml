@@ -1,0 +1,44 @@
+name: sumoffice-document-server
+services:
+  docsapi:
+    image: hissih/sumoffice-docsapi:2026.09.27-amd64
+    restart: unless-stopped
+    environment:
+      DOCSAPI_PUBLIC_URL: ${PUBLIC_URL:?set PUBLIC_URL in .env}
+      DOCSAPI_WOPI_BASE: http://docsapi:8797
+      DOCSAPI_DISCOVERY_URLS: http://discovery:8093/hosting/discovery
+      DOCSAPI_JWT_SECRET: ${DOCSAPI_JWT_SECRET:?set DOCSAPI_JWT_SECRET in .env}
+      DOCSAPI_THUMBNAIL_URL: http://preview:8099
+    volumes: ["docsapi-data:/data"]
+  sumsheet:
+    image: hissih/sumsheet-webhost:2026.09.28-amd64
+    restart: unless-stopped
+    environment: { PUBLIC_URL: "${PUBLIC_URL}", NEXTCLOUD_HOST: "docsapi" }
+    entrypoint: ["sh", "/start.sh"]
+    volumes:
+      - "sumsheet-cabins:/data/cabins"
+      - "sumsheet-wopi:/data/wopi"
+      - "./proof/proof-key.pem:/data/wopi/proof-key.pem:ro"
+      - "../nextcloud/start-sumsheet.sh:/start.sh:ro"
+  sumdoc:
+    image: hissih/sumdoc-webhost:2026.09.28-amd64
+    restart: unless-stopped
+    volumes: ["sumdoc-cabins:/data/cabins", "./proof/wopi-proof.json:/data/cabins/wopi-proof.json:ro"]
+    command: ["--base-path", "/a4", "--max-cabins", "${MAX_CABINS:-8}", "--idle-min", "15",
+              "--wopi-hosts", "http://docsapi:8797", "--public-url", "${PUBLIC_URL}/a4"]
+  preview:
+    image: hissih/sumoffice-preview:2026.09.28-amd64
+    restart: unless-stopped
+  discovery:
+    image: python:3.12-alpine
+    restart: unless-stopped
+    volumes: ["../nextcloud/discovery.py:/discovery.py:ro"]
+    environment: { PUBLIC_URL: "${PUBLIC_URL}" }
+    command: ["python3", "/discovery.py"]
+  front:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports: ["127.0.0.1:8130:8130"]
+    volumes: ["./nginx.conf:/etc/nginx/conf.d/default.conf:ro"]
+    depends_on: [docsapi, sumsheet, sumdoc, preview, discovery]
+volumes: { docsapi-data: {}, sumsheet-cabins: {}, sumsheet-wopi: {}, sumdoc-cabins: {} }

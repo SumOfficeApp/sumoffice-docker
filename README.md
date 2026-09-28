@@ -35,6 +35,23 @@ Nextcloud Office does not verify signatures, so this step is invisible there and
 
 3. Open any `.xlsx`, `.xlsm` or `.docx` in Nextcloud Files. It opens in the real engine; Save writes the same file back.
 
+**If the browser says "document failed to load", check `wopi_allowlist` first.**
+That setting lists the addresses Nextcloud accepts WOPI calls from — the editors call
+back from inside their container, so the container network has to be in the list. When
+Docker recreates the stack it can hand out a different subnet (measured 29 September:
+`192.168.48.0/20` became `192.168.0.0/20`), and from that moment Nextcloud answers the
+editor with `403` on `CheckFileInfo`. The browser shows a generic loading error, so it
+looks like a broken editor while nothing is broken:
+
+```sh
+docker network inspect <stack>_default --format '{{(index .IPAM.Config 0).Subnet}}'
+php occ config:app:get richdocuments wopi_allowlist          # do they match?
+php occ config:app:set richdocuments wopi_allowlist --value "<subnet>,<your host>"
+```
+
+Leaving `wopi_allowlist` unset accepts calls from anywhere, which is why a fresh install
+usually works and a hardened one breaks after a network change.
+
 Tested with Nextcloud 29–32 and Nextcloud Office (richdocuments) ≥ 8. The optional installer app that sets the three settings from the Nextcloud UI: https://github.com/SumOfficeApp/sumoffice-nextcloud
 
 ## Self-hosted document server

@@ -11,7 +11,7 @@ services:
       DOCSAPI_THUMBNAIL_URL: http://preview:8099
     volumes: ["docsapi-data:/data"]
   sumsheet:
-    image: hissih/sumsheet-webhost:2026.09.27-amd64
+    image: hissih/sumsheet-webhost:2026.09.28-amd64
     restart: unless-stopped
     environment: { PUBLIC_URL: "${PUBLIC_URL}", NEXTCLOUD_HOST: "docsapi" }
     entrypoint: ["sh", "/start.sh"]
@@ -21,13 +21,13 @@ services:
       - "./proof/proof-key.pem:/data/wopi/proof-key.pem:ro"
       - "../nextcloud/start-sumsheet.sh:/start.sh:ro"
   sumdoc:
-    image: hissih/sumdoc-webhost:2026.09.27-amd64
+    image: hissih/sumdoc-webhost:2026.09.28-amd64
     restart: unless-stopped
     volumes: ["sumdoc-cabins:/data/cabins", "./proof/wopi-proof.json:/data/cabins/wopi-proof.json:ro"]
     command: ["--base-path", "/a4", "--max-cabins", "${MAX_CABINS:-8}", "--idle-min", "15",
               "--wopi-hosts", "http://docsapi:8797", "--public-url", "${PUBLIC_URL}/a4"]
   preview:
-    image: hissih/sumoffice-preview:2026.09.27-amd64
+    image: hissih/sumoffice-preview:2026.09.28-amd64
     restart: unless-stopped
   discovery:
     image: python:3.12-alpine

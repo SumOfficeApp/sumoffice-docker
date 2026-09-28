@@ -4,11 +4,16 @@ Excel and Word editors you run yourself. Files stay real `.xlsx`/`.xlsm`/`.docx`
 
 Images (Docker Hub, `hissih/`): `sumsheet-webhost` (Excel-compatible), `sumdoc-webhost` (Word-compatible), `sumoffice-preview` (read-only previews), `sumoffice-docsapi` (self-hosted document server for compatible connectors), `sumoffice-mcp` (server for AI agents — https://github.com/SumOfficeApp/sumoffice-mcp).
 
-The measured 27 September release is pinned as `2026.09.27-amd64`. It is a complete
-`linux/amd64` build from SumSheet `3165c9c851996afc4df958d7ec6f648ecf504952`,
-SumDoc `4bbbfa75eda253b14dda00a6d1ffc6734d55bf90`, and DocsAPI
-`7e41326e0a34198f4821015f79e3aaae1bd5fb53`. It was run on an Apple Silicon Mac
-under Docker's x86-64 emulation; an arm64 image is not part of this release.
+The measured 28 September release is pinned as `2026.09.28-amd64`, and `latest`
+points at the same images. It is a complete `linux/amd64` build from SumSheet
+`193fdf2105` and SumDoc `cb25e7b6e`. DocsAPI is unchanged in this release and
+stays pinned at `2026.09.27-amd64` — it was not rebuilt on 28 September.
+
+The images were built on an Apple Silicon Mac under Docker's x86-64 emulation;
+**an arm64 image is not part of this release**, and `latest` is a single
+`linux/amd64` image rather than a multi-architecture list. Every image carries
+the architecture it was built for: the build refuses to produce an image whose
+architecture differs from the engine inside it.
 
 ## Nextcloud — three steps
 

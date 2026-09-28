@@ -32,6 +32,11 @@ match it — and it refuses to produce an image whose editor was never bundled. 
 faults used to pass every file check and fail at the first person who opened a
 document.
 
+**Excel and Word open the result without a repair dialog.** Re-measured on 29
+September against the published image (`sha256:527afe26004a…`), with a known-good
+and a deliberately damaged file in the same run, so that a quiet "clean" means
+something.
+
 ### Not in this release
 
 - **arm64.** These are `linux/amd64` images, and `latest` is a single image, not a

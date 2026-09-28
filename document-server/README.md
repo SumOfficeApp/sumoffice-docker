@@ -52,9 +52,11 @@ with its own Office connector, and what was not, stated separately:
   this release makes no claim about simultaneous Word editing.
 - Package integrity of both returned files was checked directly: parts count
   unchanged, embedded media intact, ZIP structure valid, VBA project identical.
-  **Opening the returned files in desktop Excel and Word was not repeated for this
-  release** — the desktop probe could not be run on the build machine, so no claim
-  about the repair dialog is made here.
+- **Desktop Microsoft Excel and Word opened the returned files with no repair
+  dialog** (29 September, image digest `sha256:527afe26004a…`). Measured with two
+  controls in the same run: a known-good workbook opened clean, and a deliberately
+  damaged one made Excel ask to repair — so a silent "clean" is a real observation
+  here, not an instrument that cannot report trouble.
 - DocsAPI answered on its API entry point locally. Connector-specific flows outside
   Nextcloud still require their own acceptance run.
 

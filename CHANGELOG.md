@@ -1,5 +1,17 @@
 # What changed
 
+## 30 September 2026 — SumSheet `2026.09.30-amd64`
+
+Only SumSheet moved; SumDoc, DocsAPI and Preview stay on their pinned tags.
+
+**SharePoint works again.** The 28 September image did not carry the SharePoint fix,
+and the `/sharepoint` setup installed that image. The 30 September build has it.
+
+**Both editors now pin `platform: linux/amd64` in compose.** These images are a single
+`linux/amd64` build, not a multi-architecture list. Without the platform line Docker on
+an arm64 host either refuses or quietly picks something else; with it the failure, if
+any, is explicit.
+
 ## 28 September 2026 — `2026.09.28-amd64`
 
 Editors rebuilt from current sources; `latest` points at these images.

@@ -4,10 +4,22 @@ Excel and Word editors you run yourself. Files stay real `.xlsx`/`.xlsm`/`.docx`
 
 Images (Docker Hub, `hissih/`): `sumsheet-webhost` (Excel-compatible), `sumdoc-webhost` (Word-compatible), `sumoffice-preview` (read-only previews), `sumoffice-docsapi` (self-hosted document server for compatible connectors), `sumoffice-mcp` (server for AI agents — https://github.com/SumOfficeApp/sumoffice-mcp).
 
-The measured 28 September release is pinned as `2026.09.28-amd64`, and `latest`
-points at the same images. It is a complete `linux/amd64` build from SumSheet
-`193fdf2105` and SumDoc `cb25e7b6e`. DocsAPI is unchanged in this release and
-stays pinned at `2026.09.27-amd64` — it was not rebuilt on 28 September.
+Pinned images, per editor — they are released on their own dates and are not
+pinned to one:
+
+| image | pinned tag | built from |
+|---|---|---|
+| `sumsheet-webhost` | `2026.09.30-amd64` | SumSheet `cc429a4394` |
+| `sumdoc-webhost` | `2026.09.28-amd64` | SumDoc `cb25e7b6e` |
+| `sumoffice-docsapi` | `2026.09.27-amd64` | unchanged since 27 September |
+| `sumoffice-preview` | `2026.09.28-amd64` | both editors of 28 September |
+
+SumSheet moved from `2026.09.28-amd64` to `2026.09.30-amd64` because the
+28 September image does not carry the SharePoint fix, while the 30 September
+build does. `latest` for `sumsheet-webhost` points at the same 30 September
+image (`sha256:72e45894c7aff14969eb55e2399437460b15c7c3775e04432486ca26565b47e0`);
+for the other images `latest` still points at their 28 September build, so pin
+the dated tag rather than relying on `latest`.
 
 The images were built on an Apple Silicon Mac under Docker's x86-64 emulation;
 **an arm64 image is not part of this release**, and `latest` is a single

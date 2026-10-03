@@ -11,7 +11,7 @@ require 'net/http'
 require 'uri'
 
 module SumofficeWopi
-  EXTENSIONS = %w[xlsx xlsm xlsb docx].freeze
+  EXTENSIONS = %w[xlsx xlsm xlsb docx pptx].freeze
   TOKEN_TTL = 10 * 3600
   LOCK_TTL = 30 * 60        # MS-WOPI: 30 minutes
   PROOF_WINDOW = 20 * 60    # MS-WOPI: 20 minutes of clock skew

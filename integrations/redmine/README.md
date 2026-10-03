@@ -32,13 +32,13 @@ On the SumOffice side, allow the Redmine host:
 
 ## Checked on
 
-Redmine 6 (Docker `redmine:6`, SQLite) + SumOffice stack, 25.09.2026:
+Redmine 6.0.7 (Docker `redmine:6.0.7`, SQLite) + SumOffice stack, 03.10.2026:
 
 - **Where the link shows.** **Open in SumOffice** appears next to the attachment on the issue page.
 - **`approved_macro_demo.xlsm`.** A cell was edited and saved with **Ctrl+S**. The attachment file has the new value, and `vbaProject.bin` is byte-identical to the original.
 - **`images.docx`.** The text was edited and saved; all five images are byte-identical.
 - **Proof verification on.** Both rounds ran with it.
-- `.pptx` transport and discovery routing are included in 1.0.2; the release candidate still needs a live Redmine → SumSlide → save-back round before publication.
+- Healthy `.docx`, `.xlsx` and `.pptx` attachments were opened from one issue in SumDoc, SumSheet and SumSlide, edited and saved back into the same attachments. All three SHA-256 values changed, all ZIP packages remained valid, and the three edit markers were found in returned OOXML. The evidence and exact hashes are recorded in [sumoffice-channels#128](https://github.com/SumOfficeApp/sumoffice-channels/pull/128).
 - **Refusals.**
   - no proof or a forged one → `500`;
   - a token for another attachment, a broken token or no token → `401`;

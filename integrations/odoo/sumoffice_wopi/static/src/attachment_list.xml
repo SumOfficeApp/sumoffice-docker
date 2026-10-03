@@ -2,7 +2,7 @@
 <templates xml:space="preserve">
     <t t-inherit="mail.AttachmentList" t-inherit-mode="extension">
         <xpath expr="//div[hasclass('o-mail-AttachmentCard-aside')]" position="inside">
-            <a t-if="!attachment.uploading and attachment.extension and ['xlsx', 'xlsm', 'xlsb', 'docx'].includes(attachment.extension.toLowerCase())"
+            <a t-if="!attachment.uploading and attachment.extension and ['xlsx', 'xlsm', 'xlsb', 'docx', 'pptx'].includes(attachment.extension.toLowerCase())"
                class="o-sumoffice-open btn d-flex align-items-center justify-content-center w-100 h-100 rounded-0 bg-300"
                t-attf-href="/sumoffice/open/{{ attachment.id }}" target="_blank" title="Open in SumOffice"
                t-on-click.stop="">

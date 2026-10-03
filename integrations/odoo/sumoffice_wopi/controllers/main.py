@@ -34,7 +34,7 @@ from odoo.http import request
 
 _logger = logging.getLogger(__name__)
 
-EXTENSIONS = ("xlsx", "xlsm", "xlsb", "docx")
+EXTENSIONS = ("xlsx", "xlsm", "xlsb", "docx", "pptx")
 TOKEN_TTL = 10 * 3600          # seconds; the editor refreshes the page long before
 LOCK_TTL = timedelta(minutes=30)  # MS-WOPI: a lock expires after 30 minutes
 PROOF_WINDOW = 20 * 60          # seconds; MS-WOPI allows 20 minutes of clock skew

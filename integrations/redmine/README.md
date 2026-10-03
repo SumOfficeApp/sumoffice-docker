@@ -1,11 +1,11 @@
 # SumOffice for Redmine
 
-A Redmine plugin (Redmine 5/6). It adds **Open in SumOffice** next to `.xlsx`, `.xlsm`, `.xlsb` and `.docx` attachments and makes Redmine a WOPI host for them. **Ctrl+S** saves the file back into the same attachment.
+A Redmine plugin (Redmine 5/6). It adds **Open in SumOffice** next to `.xlsx`, `.xlsm`, `.xlsb`, `.docx` and `.pptx` attachments and makes Redmine a WOPI host for them. **Ctrl+S** saves the file back into the same attachment.
 
 ## Install
 
 ```bash
-cp -r sumoffice_wopi /path/to/redmine/plugins/
+unzip sumoffice-redmine-1.0.2.zip -d /path/to/redmine/plugins/
 # restart Redmine
 ```
 
@@ -38,6 +38,7 @@ Redmine 6 (Docker `redmine:6`, SQLite) + SumOffice stack, 25.09.2026:
 - **`approved_macro_demo.xlsm`.** A cell was edited and saved with **Ctrl+S**. The attachment file has the new value, and `vbaProject.bin` is byte-identical to the original.
 - **`images.docx`.** The text was edited and saved; all five images are byte-identical.
 - **Proof verification on.** Both rounds ran with it.
+- `.pptx` transport and discovery routing are included in 1.0.2; the release candidate still needs a live Redmine → SumSlide → save-back round before publication.
 - **Refusals.**
   - no proof or a forged one → `500`;
   - a token for another attachment, a broken token or no token → `401`;

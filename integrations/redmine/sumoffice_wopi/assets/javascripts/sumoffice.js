@@ -1,6 +1,6 @@
-// "Open in SumOffice" next to Excel/Word attachments. The server checks the rights again.
+// "Open in SumOffice" next to spreadsheet/document/presentation attachments.
 (function () {
-  var EXT = /\.(xlsx|xlsm|xlsb|docx)$/i;
+  var EXT = /\.(xlsx|xlsm|xlsb|docx|pptx)$/i;
   function add() {
     var base = (document.querySelector('link[rel="stylesheet"][href*="/stylesheets/"]') || {}).href || "";
     var root = base.replace(/\/stylesheets\/.*$/, "").replace(/^https?:\/\/[^/]+/, "");

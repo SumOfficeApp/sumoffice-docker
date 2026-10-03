@@ -1,7 +1,7 @@
 {
     "name": "Excel & Word Attachment Editor (SumOffice)",
-    "summary": "Edit Excel and Word attachments in Odoo — xlsx, xlsm, xlsb, docx; VBA macros kept",
-    "version": "18.0.1.0.1",
+    "summary": "Edit spreadsheet, document and presentation attachments — xlsx, xlsm, xlsb, docx, pptx",
+    "version": "18.0.1.0.2",
     "category": "Productivity/Documents",
     "license": "LGPL-3",
     "author": "SumOffice",

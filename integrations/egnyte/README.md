@@ -16,9 +16,12 @@ The Egnyte token never reaches the browser. It stays in the service's memory, bo
 
 1. **Run the bridge behind HTTPS.** Egnyte's cloud and the SumOffice servers must both reach it.
 
+   Copy `integrations/egnyte/egnyte-bridge.env.example` outside the repository,
+   fill the values without committing them, then install or replace the named
+   bridge container with one command:
+
    ```bash
-   docker build -t sumoffice-egnyte-bridge integrations/egnyte/bridge
-   docker run -d -p 8790:8790 --env-file egnyte-bridge.env sumoffice-egnyte-bridge
+   ./integrations/egnyte/install.sh /secure/path/egnyte-bridge.env
    ```
 
    | Variable | Meaning |

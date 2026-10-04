@@ -25,9 +25,12 @@ Environment variables:
 | `TOKEN_KEY` | Optional. The key for access tokens; `BRIDGE_SECRET` by default |
 | `PORT`, `HOST` | `8787`, `0.0.0.0` |
 
+Copy `integrations/kintone/kintone-bridge.env.example` outside the repository,
+fill the values without committing them, then install or replace the named
+bridge container with one command:
+
 ```bash
-docker build -t sumoffice-kintone-bridge integrations/kintone/bridge
-docker run -d -p 8787:8787 --env-file kintone-bridge.env sumoffice-kintone-bridge
+./integrations/kintone/install.sh /secure/path/kintone-bridge.env
 ```
 
 Put the bridge behind HTTPS at `PUBLIC_URL`. kintone (cybozu.com) and the SumOffice servers must both be able to reach it. On the SumOffice side, allow the bridge host:

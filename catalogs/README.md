@@ -1,6 +1,8 @@
 # SumOffice catalog packages
 
-Status: draft, not yet submitted; needs republished multi-arch images (amd64+arm64) with the WOPI proof-key fix before submission.
+Status: draft, not submitted. The four-service and per-editor packages pin the released
+linux/amd64 images from 1 October by tag and digest. One-container catalogs remain blocked on a
+released `sumoffice-aio` image; arm64 catalogs remain blocked on released arm64 editor images.
 
 Self-hosting catalog packages for SumOffice: **SumSheet** (Excel-compatible, `/f1`), **SumDoc** (Word-compatible,
 `/a4`) and the joint WOPI discovery (`/hosting/discovery`, `/hosting/capabilities`) behind one origin on port 8093.

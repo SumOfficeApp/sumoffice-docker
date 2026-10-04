@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <Container version="2">
   <Name>SumSheet</Name>
-  <Repository>hissih/sumsheet-webhost:latest</Repository>
+  <Repository>hissih/sumsheet-webhost:2026.10.01-amd64@sha256:5874968f0c3cb576fa1870a32ffb47d99e1cd1d1b298a31b19814e4cb5639d9e</Repository>
   <Registry>https://hub.docker.com/r/hissih/sumsheet-webhost</Registry>
   <Network>bridge</Network>
   <MyIP/>

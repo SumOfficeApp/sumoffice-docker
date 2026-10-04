@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <Container version="2">
   <Name>SumDoc</Name>
-  <Repository>hissih/sumdoc-webhost:latest</Repository>
+  <Repository>hissih/sumdoc-webhost:2026.10.01-amd64@sha256:3f7667ee310173ec11121a512de73cfbae82073f660f760ad103c7d50f3e94cc</Repository>
   <Registry>https://hub.docker.com/r/hissih/sumdoc-webhost</Registry>
   <Network>bridge</Network>
   <MyIP/>

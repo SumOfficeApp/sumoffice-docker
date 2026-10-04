@@ -5,8 +5,8 @@ Status: draft, not yet submitted; needs republished multi-arch images (amd64+arm
 | Template | Image | Use |
 |---|---|---|
 | `sumoffice.xml` | `hissih/sumoffice-aio:v1` | both editors + joint WOPI discovery on port 8093, for Nextcloud Office |
-| `sumsheet.xml` | `hissih/sumsheet-webhost:latest` | SumSheet standalone (your own system: `--auth-url`, `--attach-url`) |
-| `sumdoc.xml` | `hissih/sumdoc-webhost:latest` | SumDoc standalone (same contract) |
+| `sumsheet.xml` | released `hissih/sumsheet-webhost:2026.10.01-amd64` pinned by digest | SumSheet standalone (your own system: `--auth-url`, `--attach-url`) |
+| `sumdoc.xml` | released `hissih/sumdoc-webhost:2026.10.01-amd64` pinned by digest | SumDoc standalone (same contract) |
 | `ca_profile.xml` | — | maintainer profile shown in Community Applications |
 
 Why the Nextcloud template is one container: an Unraid template describes one container and cannot ship the

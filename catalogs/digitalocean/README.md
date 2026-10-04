@@ -68,4 +68,4 @@ proof-key fix (and tagged, so `sumoffice_ref`/image tags can be pinned); logo an
   from the image still get the web console (DigitalOcean installs the agent on customer Droplets separately).
 - Snapshot size grows with the pulled images (about 400 MB compressed today); the smallest plan's 25 GB disk is
   ample.
-- Image tags: the stack uses `:latest` from `nextcloud/docker-compose.yml`; pin versions for a reproducible listing.
+- Image tags: the stack uses the released linux/amd64 tags and digests pinned in `nextcloud/docker-compose.yml`.

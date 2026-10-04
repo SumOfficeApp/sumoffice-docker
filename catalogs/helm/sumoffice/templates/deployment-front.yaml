@@ -1,0 +1,50 @@
+{{- $fullname := include "sumoffice.fullname" . }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}-compat
+  labels:
+    {{- include "sumoffice.labels" . | nindent 4 }}
+    app.kubernetes.io/component: compat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "sumoffice.selectorLabels" (list . "compat") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "sumoffice.selectorLabels" (list . "compat") | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: compat
+          image: {{ include "sumoffice.image" .Values.compat.image }}
+          imagePullPolicy: {{ .Values.compat.image.pullPolicy }}
+          args:
+            - --public-url
+            - {{ include "sumoffice.publicUrl" . | quote }}
+            - --word
+            - {{ printf "http://%s-sumdoc:8090" $fullname | quote }}
+            - --cell
+            - {{ printf "http://%s-sumsheet:8092" $fullname | quote }}
+          env:
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $fullname }}-jwt
+                  key: jwt-secret
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          readinessProbe:
+            httpGet: { path: /healthcheck, port: http }
+          livenessProbe:
+            httpGet: { path: /healthcheck, port: http }
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.compat.resources | nindent 12 }}

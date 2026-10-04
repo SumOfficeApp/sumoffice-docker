@@ -1,0 +1,69 @@
+captainVersion: 4
+services:
+    # SumOffice: SumSheet (/f1) + SumDoc (/a4) + joint WOPI discovery (/hosting/*) in one container on port 8093.
+    $$cap_appname:
+        image: hissih/sumoffice-aio:$$cap_sumoffice_version
+        restart: unless-stopped
+        environment:
+            PUBLIC_URL: $$cap_public_url
+            NEXTCLOUD_HOST: $$cap_wopi_host
+            NEXTCLOUD_URL: $$cap_wopi_url
+            MAX_CABINS: $$cap_max_cabins
+            TZ: $$cap_tz
+        volumes:
+            - $$cap_appname-data:/data
+        caproverExtra:
+            containerHttpPort: '8093'
+            websocketSupport: 'true'
+caproverOneClickApp:
+    variables:
+        - id: $$cap_sumoffice_version
+          label: SumOffice image tag
+          defaultValue: v1
+          description: Tag of hissih/sumoffice-aio, see https://hub.docker.com/r/hissih/sumoffice-aio/tags
+          validRegex: /^([^\s^\/])+$/
+        - id: $$cap_public_url
+          label: Public address of the editors
+          defaultValue: https://$$cap_appname.$$cap_root_domain
+          description: The address browsers use to reach this app. Enable HTTPS for the app in CapRover after deploy; keep https here if your WOPI host uses https.
+          validRegex: /^https?:\/\/[^\s\/]+$/
+        - id: $$cap_wopi_host
+          label: WOPI host name (your Nextcloud)
+          defaultValue: cloud.example.com
+          description: Host name of the file storage allowed to open files, without scheme (for example cloud.example.com).
+          validRegex: /^[^\s\/:]+(:[0-9]+)?$/
+        - id: $$cap_wopi_url
+          label: WOPI host origin (your Nextcloud)
+          defaultValue: https://cloud.example.com
+          description: Full origin of the same storage, with scheme.
+          validRegex: /^https?:\/\/[^\s\/]+$/
+        - id: $$cap_max_cabins
+          label: Open documents per editor
+          defaultValue: '8'
+          description: Each open document is one process of about 250 MB RAM.
+          validRegex: /^[1-9][0-9]*$/
+        - id: $$cap_tz
+          label: Time zone
+          defaultValue: Etc/UTC
+          validRegex: /^[A-Za-z_\/+-]+$/
+    instructions:
+        start: |-
+            SumOffice adds two browser editors to Nextcloud Office (and other WOPI hosts): SumSheet for Excel
+            workbooks (.xlsx, .xlsm, .xlsb; VBA kept) and SumDoc for Word documents (.docx).
+
+            Needs about 2 GB RAM plus about 250 MB per open document. The images are free for evaluation;
+            production use inside an organisation is licensed per application: https://sumoffice.com/download#server
+        end: |-
+            SumOffice is deployed.
+
+            1. In CapRover open the app, enable HTTPS and "Force HTTPS", then check
+               $$cap_public_url/hosting/discovery
+            2. On the Nextcloud host:
+               php occ config:app:set richdocuments wopi_url --value "$$cap_public_url"
+               php occ config:app:set richdocuments public_wopi_url --value "$$cap_public_url"
+               php occ richdocuments:activate-config
+            3. Open an .xlsx or .docx in Nextcloud Files.
+    displayName: SumOffice
+    isOfficial: false
+    description: Excel- and Word-compatible web editors for Nextcloud Office over WOPI
+    documentation: https://github.com/SumOfficeApp/sumoffice-docker

@@ -1,41 +1,61 @@
-# SumOffice editors for Nextcloud — one public address, two editors behind it.
-# Nextcloud allows exactly one origin for the editor frame (CSP), so SumSheet
-# lives at /f1 and SumDoc at /a4 behind one nginx; /hosting/* is the WOPI
-# discovery Nextcloud reads. Put your TLS reverse proxy in front of :8093
-# (e.g. https://office.example.com → 127.0.0.1:8093).
+# SumOffice compatibility server and the two publicly released editor images.
+# One public address serves the API expected by existing office connectors.
+# Set PUBLIC_URL to the HTTPS origin exposed by the reverse proxy.
 #
-# Set NEXTCLOUD_URL to the address your users open Nextcloud at, and
-# PUBLIC_URL to the address you give this stack (https://office.example.com).
-name: sumoffice-nextcloud
+# There is deliberately no presentation service here: a public SumSlide server
+# image has not been released yet. Do not advertise PPTX for this package.
+name: sumoffice-compat
+
 services:
-  sumsheet:
-    image: hissih/sumsheet-webhost:2026.09.30-amd64
-    platform: linux/amd64
+  compat:
+    image: hissih/sumoffice-compat:2026.4.0.2@sha256:ae116f65344bc1721a423306bb1de311df25481064edf0aa7fc4757624bcbdc5
     restart: unless-stopped
-    volumes: ["sumsheet-cabins:/data/cabins", "sumsheet-wopi:/data/wopi", "./proof-key.pem:/data/wopi/proof-key.pem:ro", "./start-sumsheet.sh:/start.sh:ro"]
-    environment: { PUBLIC_URL: "${PUBLIC_URL}", NEXTCLOUD_HOST: "${NEXTCLOUD_HOST}" }
-    entrypoint: ["sh", "/start.sh"]
+    ports: ["127.0.0.1:8093:8080"]
+    environment:
+      JWT_SECRET: "${JWT_SECRET:-}"
+    command:
+      - --public-url
+      - "${PUBLIC_URL}"
+      - --word
+      - http://sumdoc:8090
+      - --cell
+      - http://sumsheet:8092
+    depends_on: [sumdoc, sumsheet]
+
   sumdoc:
-    image: hissih/sumdoc-webhost:2026.09.28-amd64
+    image: hissih/sumdoc-webhost:latest@sha256:3f7667ee310173ec11121a512de73cfbae82073f660f760ad103c7d50f3e94cc
     platform: linux/amd64
     restart: unless-stopped
-    volumes: ["sumdoc-cabins:/data/cabins", "./wopi-proof.json:/data/cabins/wopi-proof.json:ro"]
-    # One signing key for the whole stack (see sdelat-proof-klyuch.sh): the merged
-    # /hosting/discovery can carry only one key, yet both editors sign. Different
-    # keys mean half the calls fail verification on a host that does verify —
-    # Odoo by default, SharePoint always.
-    command: ["--base-path", "/a4", "--max-cabins", "8", "--idle-min", "15",
-              "--wopi-hosts", "${NEXTCLOUD_URL}", "--public-url", "${PUBLIC_URL}/a4"]
-  discovery:
-    image: python:3.12-alpine
+    volumes: ["sumdoc-cabins:/data/cabins"]
+    command:
+      - --base-path
+      - /word
+      - --max-cabins
+      - "${MAX_CABINS:-8}"
+      - --idle-min
+      - "${IDLE_MIN:-20}"
+      - --auth-url
+      - http://compat:8080/host/v1/me
+      - --attach-url
+      - http://compat:8080/host/v1/attachments/{id}/content
+
+  sumsheet:
+    image: hissih/sumsheet-webhost:latest@sha256:5874968f0c3cb576fa1870a32ffb47d99e1cd1d1b298a31b19814e4cb5639d9e
+    platform: linux/amd64
     restart: unless-stopped
-    volumes: ["./discovery.py:/discovery.py:ro"]
-    environment: { PUBLIC_URL: "${PUBLIC_URL}" }
-    command: ["python3", "/discovery.py"]
-  front:
-    image: nginx:1.27-alpine
-    restart: unless-stopped
-    ports: ["127.0.0.1:8093:8093"]
-    volumes: ["./nginx.conf:/etc/nginx/conf.d/default.conf:ro"]
-    depends_on: [sumsheet, sumdoc, discovery]
-volumes: { sumsheet-cabins: {}, sumsheet-wopi: {}, sumdoc-cabins: {} }
+    volumes: ["sumsheet-cabins:/data/cabins"]
+    command:
+      - --base-path
+      - /cell
+      - --max-cabins
+      - "${MAX_CABINS:-8}"
+      - --idle-min
+      - "${IDLE_MIN:-20}"
+      - --auth-url
+      - http://compat:8080/host/v1/me
+      - --attach-url
+      - http://compat:8080/host/v1/attachments/{id}/content
+
+volumes:
+  sumdoc-cabins: {}
+  sumsheet-cabins: {}

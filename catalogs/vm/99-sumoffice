@@ -1,0 +1,24 @@
+#!/bin/sh
+# SumOffice VM appliance — login banner (/etc/update-motd.d/99-sumoffice).
+
+public_url="(not configured yet)"
+if [ -r /etc/sumoffice/sumoffice.env ]; then
+  public_url="$(sed -n 's/^SUMOFFICE_PUBLIC_URL=//p' /etc/sumoffice/sumoffice.env)"
+fi
+cat <<EOF
+********************************************************************************
+
+SumOffice: Excel-compatible (SumSheet, /cell) and Word-compatible (SumDoc, /word)
+editors behind one compatibility-server address.
+
+  Editors address:   ${public_url}
+  Change settings:   sudo sumoffice-configure --interactive
+  Stack:             cd /opt/sumoffice/nextcloud && docker compose ps
+  Health check:      curl -fsS ${public_url}/healthcheck
+
+  Documentation:     https://github.com/SumOfficeApp/sumoffice-docker
+  Licence:           free for evaluation; production use inside an organisation
+                     is licensed per application: https://sumoffice.com/download#server
+
+********************************************************************************
+EOF

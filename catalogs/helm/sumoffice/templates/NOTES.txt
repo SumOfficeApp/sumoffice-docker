@@ -1,0 +1,21 @@
+SumOffice compatibility server is starting: SumSheet at /cell and SumDoc at /word.
+
+Public address: {{ include "sumoffice.publicUrl" . }}
+
+{{- if .Values.ingress.enabled }}
+
+Check the server:
+  curl -fsS {{ include "sumoffice.publicUrl" . }}/healthcheck
+{{- else }}
+
+No ingress is enabled. Check locally:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "sumoffice.fullname" . }} 8093:{{ .Values.service.port }}
+  curl -fsS http://127.0.0.1:8093/healthcheck
+Your TLS proxy must forward {{ include "sumoffice.publicUrl" . }} to this service with WebSocket upgrades on.
+{{- end }}
+
+In the connector's Document Server settings, enter the public address above and
+the same secret supplied as jwtSecret.
+
+Licence: the images are free for evaluation; production use inside an organisation is licensed
+per application, see https://sumoffice.com/download#server

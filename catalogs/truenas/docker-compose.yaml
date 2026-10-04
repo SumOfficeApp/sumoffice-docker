@@ -1,0 +1,25 @@
+name: sumoffice-compat
+services:
+  compat:
+    image: hissih/sumoffice-compat:2026.4.0.2@sha256:ae116f65344bc1721a423306bb1de311df25481064edf0aa7fc4757624bcbdc5
+    restart: unless-stopped
+    ports: ["8093:8080"]
+    environment:
+      JWT_SECRET: change-me
+    command: ["--public-url", "https://office.example.com", "--word", "http://sumdoc:8090", "--cell", "http://sumsheet:8092"]
+  sumdoc:
+    image: hissih/sumdoc-webhost:latest@sha256:3f7667ee310173ec11121a512de73cfbae82073f660f760ad103c7d50f3e94cc
+    platform: linux/amd64
+    restart: unless-stopped
+    volumes: ["sumdoc-cabins:/data/cabins"]
+    command: ["--base-path", "/word", "--max-cabins", "8", "--idle-min", "20", "--auth-url", "http://compat:8080/host/v1/me", "--attach-url", "http://compat:8080/host/v1/attachments/{id}/content"]
+  sumsheet:
+    image: hissih/sumsheet-webhost:latest@sha256:5874968f0c3cb576fa1870a32ffb47d99e1cd1d1b298a31b19814e4cb5639d9e
+    platform: linux/amd64
+    restart: unless-stopped
+    volumes: ["sumsheet-cabins:/data/cabins"]
+    command: ["--base-path", "/cell", "--max-cabins", "8", "--idle-min", "20", "--auth-url", "http://compat:8080/host/v1/me", "--attach-url", "http://compat:8080/host/v1/attachments/{id}/content"]
+volumes:
+  sumdoc-cabins: {}
+  sumsheet-cabins: {}
+

@@ -23,7 +23,7 @@ spec:
     - host: {{ .host | quote }}
       http:
         paths:
-          {{- range list "/f1" "/a4" "/hosting" }}
+          {{- range list "/" }}
           - path: {{ . }}
             pathType: Prefix
             backend:

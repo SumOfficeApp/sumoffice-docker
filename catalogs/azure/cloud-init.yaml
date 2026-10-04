@@ -11,5 +11,5 @@ packages:
 runcmd:
   - [git, clone, --depth, '1', --branch, '__SUMOFFICE_REF__', 'https://github.com/SumOfficeApp/sumoffice-docker', /opt/sumoffice]
   - [env, 'SUMOFFICE_REF=__SUMOFFICE_REF__', bash, /opt/sumoffice/catalogs/vm/sumoffice-install.sh]
-  - [/usr/local/sbin/sumoffice-configure, --domain, '__DOMAIN__', --nextcloud-url, '__NEXTCLOUD_URL__']
+  - [/usr/local/sbin/sumoffice-configure, --domain, '__DOMAIN__', --jwt-secret, '__JWT_SECRET__']
 final_message: "SumOffice cloud-init finished after $UPTIME seconds"

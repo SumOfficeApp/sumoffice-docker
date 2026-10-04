@@ -1,5 +1,5 @@
 {{- $fullname := include "sumoffice.fullname" . }}
-{{- range $c := list (dict "name" "sumsheet" "port" 8092) (dict "name" "sumdoc" "port" 8090) (dict "name" "discovery" "port" 8093) }}
+{{- range $c := list (dict "name" "sumsheet" "port" 8092) (dict "name" "sumdoc" "port" 8090) }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -24,7 +24,7 @@ metadata:
   name: {{ $fullname }}
   labels:
     {{- include "sumoffice.labels" . | nindent 4 }}
-    app.kubernetes.io/component: front
+    app.kubernetes.io/component: compat
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -33,4 +33,4 @@ spec:
       targetPort: http
       protocol: TCP
   selector:
-    {{- include "sumoffice.selectorLabels" (list . "front") | nindent 4 }}
+    {{- include "sumoffice.selectorLabels" (list . "compat") | nindent 4 }}

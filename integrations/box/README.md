@@ -1,6 +1,6 @@
 # SumOffice for Box
 
-This is a Box Web App Integration. **Open with SumOffice** in a file's **More Options → Integrations** menu opens a `.xlsx`, `.xlsm`, `.xlsb` or `.docx` file in SumSheet (Excel-compatible) or SumDoc (Word-compatible). **Ctrl+S** uploads a new version of the same Box file, written with the person's own Box rights.
+This is a Box Web App Integration. **Open with SumOffice** in a file's **More Options → Integrations** menu opens `.xlsx`, `.xlsm` and `.xlsb` in SumSheet, `.docx` in SumDoc, and `.pptx` in SumSlide. **Ctrl+S** uploads a new version of the same Box file, written with the person's own Box rights.
 
 The app is a small service (`bridge/`, Node 20+, no dependencies). It does two jobs:
 
@@ -16,9 +16,12 @@ The Box access and refresh tokens never reach the browser. They stay in the serv
 
 1. **Run the bridge behind HTTPS.** The person's browser, Box and the SumOffice servers must all reach it.
 
+   Copy `integrations/box/box-bridge.env.example` outside the repository, fill
+   the values without committing them, then install or replace the named bridge
+   container with one command:
+
    ```bash
-   docker build -t sumoffice-box-bridge integrations/box/bridge
-   docker run -d -p 8796:8796 --env-file box-bridge.env sumoffice-box-bridge
+   ./integrations/box/install.sh /secure/path/box-bridge.env
    ```
 
    | Variable | Meaning |
@@ -34,6 +37,7 @@ The Box access and refresh tokens never reach the browser. They stay in the serv
    On the SumOffice side, allow the bridge host:
    - SumSheet: `WOPI_ALLOW=sumoffice-box.example.com`
    - SumDoc: `--wopi-hosts https://sumoffice-box.example.com`
+   - SumSlide: `--wopi-hosts https://sumoffice-box.example.com`
 
 2. **Create the app in the Box Developer Console** (`https://app.box.com/developers/console`).
    1. **Create New App → Custom App → User Authentication (OAuth 2.0).** Web App Integrations are only available to OAuth 2.0 apps.
@@ -42,8 +46,8 @@ The Box access and refresh tokens never reach the browser. They stay in the serv
       - **OAuth 2.0 Redirect URI:** `https://sumoffice-box.example.com/box/callback` (the bridge never runs its own sign-in flow, but Box requires a redirect URI);
       - **Application Scopes:** *Read all files and folders stored in Box* and *Write all files and folders stored in Box*.
    3. **Integrations tab → Create a Web App Integration:**
-      - **Integration name:** `SumOffice`; **Description:** `Open and edit Excel and Word files in SumOffice.`
-      - **Supported file extensions:** `xlsx, xlsm, xlsb, docx`;
+      - **Integration name:** `SumOffice`; **Description:** `Open and edit spreadsheets, documents and presentations in SumOffice.`
+      - **Supported file extensions:** `xlsx, xlsm, xlsb, docx, pptx`;
       - **Permissions:** *Full permissions are required* for an edit integration. Choose *Download permissions are required* instead to also offer it to people who can only view; they then get the read-only editor;
       - **Integration scopes:** the file from which the integration is invoked;
       - **Integration type:** *Files*;
@@ -82,7 +86,7 @@ The Box access and refresh tokens never reach the browser. They stay in the serv
 Tested on 25.09.2026 against a local mock of the Box API (`bridge/test/mock-box.mjs`): token endpoint (authorization code and single-use refresh tokens), user, file metadata with `fields`, content with a `302` to a separate download host, and multipart upload of new versions with `If-Match`. **Not yet checked on real Box** — that needs a Box developer account with a Web App Integration pointing at a public bridge.
 
 - `node --test integrations/box/bridge/test/bridge.test.mjs` covers the whole path with real RSA proof keys: callback with `auth_code` → editor page → CheckFileInfo → LOCK → GetFile → PutFile creates a new version → GetFile reads it. It also checks the refusals:
-  - no `auth_code` or a malformed `file_id` → `400`; a code Box did not issue, or one used twice → `401`; a file that is not `.xlsx/.xlsm/.xlsb/.docx` → `415`;
+  - no `auth_code` or a malformed `file_id` → `400`; a code Box did not issue, or one used twice → `401`; a file that is not `.xlsx/.xlsm/.xlsb/.docx/.pptx` → `415`;
   - the one-time link used twice, or opened after two minutes → `410`;
   - no proof or a forged one → `500`;
   - a broken token or another session's token → `401`;

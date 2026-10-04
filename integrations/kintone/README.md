@@ -2,7 +2,7 @@
 
 kintone keeps files in attachment fields and has no WOPI host of its own, so the integration has two parts:
 
-- **`plugin/`** — a kintone plugin. It adds **Open in SumOffice** next to `.xlsx`, `.xlsm`, `.xlsb` and `.docx` files on the record page.
+- **`plugin/`** — a kintone plugin. It adds **Open in SumOffice** next to `.xlsx`, `.xlsm`, `.xlsb`, `.docx` and `.pptx` files on the record page.
 - **`bridge/`** — a small WOPI host (Node 20+, no dependencies) that serves those files to SumOffice. It reads and writes them through the kintone REST API with an app API token. **Ctrl+S** uploads the new file and puts it into the same slot of the same field; the field's other files stay as they were.
 
 ```
@@ -33,6 +33,7 @@ docker run -d -p 8787:8787 --env-file kintone-bridge.env sumoffice-kintone-bridg
 Put the bridge behind HTTPS at `PUBLIC_URL`. kintone (cybozu.com) and the SumOffice servers must both be able to reach it. On the SumOffice side, allow the bridge host:
 - SumSheet: `WOPI_ALLOW=sumoffice-kintone.example.com`
 - SumDoc: `--wopi-hosts https://sumoffice-kintone.example.com`
+- SumSlide: `--wopi-hosts https://sumoffice-kintone.example.com`
 
 ## Plugin
 

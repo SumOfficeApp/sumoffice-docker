@@ -16,9 +16,12 @@ The Box access and refresh tokens never reach the browser. They stay in the serv
 
 1. **Run the bridge behind HTTPS.** The person's browser, Box and the SumOffice servers must all reach it.
 
+   Copy `integrations/box/box-bridge.env.example` outside the repository, fill
+   the values without committing them, then install or replace the named bridge
+   container with one command:
+
    ```bash
-   docker build -t sumoffice-box-bridge integrations/box/bridge
-   docker run -d -p 8796:8796 --env-file box-bridge.env sumoffice-box-bridge
+   ./integrations/box/install.sh /secure/path/box-bridge.env
    ```
 
    | Variable | Meaning |

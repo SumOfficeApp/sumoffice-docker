@@ -1,0 +1,21 @@
+{
+  "slug": "a4-office-attachment-editor",
+  "version": "0.1.0",
+  "permissions": {
+    "data": ["tracker:attachments:read", "tracker:attachments:write"]
+  },
+  "slots": {
+    "tracker": {
+      "attachment.viewer.action": [
+        {
+          "entrypoint": "index.html",
+          "title": { "ru": "Изменить в A4 Office", "en": "Edit in A4 Office" },
+          "description": {
+            "ru": "Открыть таблицу, документ или презентацию и заменить вложение сохранённой версией",
+            "en": "Edit a spreadsheet, document, or presentation and replace the attachment with the saved version"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -21,7 +21,7 @@ use Espo\Entities\User;
 
 class Wopi
 {
-    public const EXTENSIONS = ['xlsx', 'xlsm', 'xlsb', 'docx'];
+    public const EXTENSIONS = ['xlsx', 'xlsm', 'xlsb', 'docx', 'pptx'];
     private const TOKEN_TTL = 36000;      // seconds
     private const LOCK_TTL = 1800;        // MS-WOPI: 30 minutes
     private const PROOF_WINDOW = 1200;    // MS-WOPI: 20 minutes of clock skew

@@ -5,7 +5,7 @@
 #   SUMOFFICE_DOMAIN         DNS name pointing at the instance -> https://<name> with a Let's Encrypt certificate;
 #                            leave empty to start on plain http://<instance IP> (fine for a first look only)
 #   SUMOFFICE_PUBLIC_URL     only if TLS is terminated elsewhere (e.g. an OVHcloud load balancer); else empty
-#   SUMOFFICE_NEXTCLOUD_URL  the Nextcloud your users open
+#   SUMOFFICE_JWT_SECRET     shared secret entered in the office connector
 # Change them later on the instance with: sudo sumoffice-configure --interactive
 # Log: /var/log/cloud-init-output.log
 package_update: true
@@ -16,11 +16,11 @@ packages:
   - curl
 write_files:
   - path: /etc/sumoffice/sumoffice.env
-    permissions: '0644'
+    permissions: '0600'
     content: |
       SUMOFFICE_DOMAIN=
       SUMOFFICE_PUBLIC_URL=
-      SUMOFFICE_NEXTCLOUD_URL=https://cloud.example.com
+      SUMOFFICE_JWT_SECRET=change-me
 runcmd:
   - [git, clone, --depth, '1', --branch, main, 'https://github.com/SumOfficeApp/sumoffice-docker', /opt/sumoffice]
   - [bash, /opt/sumoffice/catalogs/vm/sumoffice-install.sh]

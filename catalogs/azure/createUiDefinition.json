@@ -101,21 +101,18 @@
         "name": "sumoffice",
         "label": "SumOffice",
         "subLabel": {
-          "preValidation": "Connect Nextcloud",
+          "preValidation": "Configure connector security",
           "postValidation": "Done"
         },
         "bladeTitle": "SumOffice settings",
         "elements": [
           {
-            "name": "nextcloudUrl",
-            "type": "Microsoft.Common.TextBox",
-            "label": "Nextcloud address",
-            "placeholder": "https://cloud.example.com",
-            "toolTip": "The address your users open Nextcloud at. Only this Nextcloud may open files in the editors.",
+            "name": "jwtSecret",
+            "type": "Microsoft.Common.PasswordBox",
+            "label": "Connector JWT secret",
+            "toolTip": "A long random value. Enter the same secret in the office connector.",
             "constraints": {
-              "required": true,
-              "regex": "^https?://[A-Za-z0-9.-]+(:[0-9]{1,5})?$",
-              "validationMessage": "Scheme and host only, e.g. https://cloud.example.com (no path, no trailing slash)."
+              "required": true
             }
           },
           {
@@ -151,7 +148,7 @@
       "adminPasswordOrKey": "[if(equals(basics('credentials').authenticationType, 'password'), basics('credentials').password, basics('credentials').sshPublicKey)]",
       "vmSize": "[steps('vmSettings').vmSize]",
       "sshSourceAddressPrefix": "[steps('vmSettings').sshSourceAddressPrefix]",
-      "nextcloudUrl": "[steps('sumoffice').nextcloudUrl]",
+      "jwtSecret": "[steps('sumoffice').jwtSecret]",
       "customDomain": "[if(empty(steps('sumoffice').customDomain), 'none', steps('sumoffice').customDomain)]"
     }
   }

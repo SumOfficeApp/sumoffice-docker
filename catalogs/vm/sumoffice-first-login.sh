@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SumOffice VM appliance — runs once, on the first interactive root login (hooked into /root/.bashrc by the
-# first-boot script). Asks for the DNS name and the Nextcloud address, then restores the default .bashrc
+# first-boot script). Asks for the DNS name and connector secret, then restores the default .bashrc
 # so it does not run again. Re-run any time with: sumoffice-configure --interactive
 set -uo pipefail
 
@@ -8,7 +8,7 @@ set -uo pipefail
 [[ -t 0 && -t 1 ]] || exit 0
 
 echo
-echo "Welcome to SumOffice (SumSheet + SumDoc for Nextcloud)."
+echo "Welcome to SumOffice (SumSheet + SumDoc compatibility server)."
 if ! sumoffice-configure --interactive; then
   echo "Setup did not finish; run 'sumoffice-configure --interactive' again." >&2
 fi

@@ -1,6 +1,6 @@
 # SumOffice — DigitalOcean Marketplace (Droplet 1-Click App)
 
-Status: draft, not yet submitted; needs republished images with the WOPI proof-key fix before submission.
+Status: submission package on released images, not submitted; real snapshot round remains an owner gate.
 
 A Droplet 1-Click App is a snapshot in the vendor's DigitalOcean team, submitted through the Vendor Portal. This
 folder builds that snapshot with Packer, following the layout of
@@ -14,15 +14,14 @@ force-ssh-logout, `90-cleanup.sh`, `99-img-check.sh`, snapshot.
 | `scripts/02-ufw.sh` | `ufw limit ssh`, allow 80 and 443, enable |
 | `scripts/03-force-ssh-logout.sh` | DigitalOcean's script: root SSH shows "Please wait..." until first boot is done |
 | `scripts/90-cleanup.sh`, `scripts/99-img-check.sh` | DigitalOcean's cleanup and image check, copied unchanged from marketplace-partners (Apache-2.0, headers kept; licence text in `scripts/LICENSE-digitalocean.md`) |
-| `files/var/lib/cloud/scripts/per-instance/001_onboot` | first boot of each Droplet: `sumoffice-configure --public-url http://<Droplet IP>` (new proof key, stack up), hooks `sumoffice-first-login` into `/root/.bashrc`, removes the SSH force-logout |
+| `files/var/lib/cloud/scripts/per-instance/001_onboot` | first boot: starts the stack at the Droplet IP, hooks `sumoffice-first-login`, removes the SSH force-logout |
 
 Shared scripts: `../vm/` (see its README). The customer experience:
 
 1. Create the Droplet from the Marketplace. After first boot the editors answer on `http://<Droplet IP>`
-   (`/hosting/discovery`, `/f1`, `/a4`).
-2. SSH in as root: the setup asks for a DNS name that points at the Droplet (Caddy then gets a Let's Encrypt
-   certificate) and the Nextcloud address.
-3. On the Nextcloud host: `sh nextcloud-occ.sh https://<that name>`.
+   (`/healthcheck`, `/cell/health`, `/word/health`).
+2. SSH in as root: setup asks for a DNS name and connector JWT secret; Caddy obtains a Let's Encrypt certificate.
+3. Enter the same address and secret in the office connector.
 
 ## Build (owner)
 
@@ -49,8 +48,8 @@ marketplace-partners.
 4. Later updates: new snapshot, then the Vendor API
    (`PATCH https://api.digitalocean.com/api/v1/vendor-portal/apps/<app_id>` with `imageId`), see marketplace-partners.
 
-What is needed from the owner: a DigitalOcean account with Vendor Portal access; the images republished with the
-proof-key fix (and tagged, so `sumoffice_ref`/image tags can be pinned); logo and listing texts.
+What is needed from the owner: a DigitalOcean account with Vendor Portal access, a real snapshot test, logo and
+listing assets.
 
 ## Checked
 

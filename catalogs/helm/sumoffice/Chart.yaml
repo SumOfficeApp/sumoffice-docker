@@ -1,9 +1,9 @@
 apiVersion: v2
 name: sumoffice
-description: SumOffice web editors (SumSheet for Excel workbooks, SumDoc for Word documents) behind one origin with a joint WOPI discovery, for Nextcloud Office and other WOPI hosts.
+description: SumOffice compatibility server with SumSheet and SumDoc behind one origin.
 type: application
 version: 0.2.0
-appVersion: "2026.10.01"
+appVersion: "2026.4.0.2"
 kubeVersion: ">=1.23.0-0"
 home: https://github.com/SumOfficeApp/sumoffice-docker
 icon: https://raw.githubusercontent.com/SumOfficeApp/sumoffice-docker/main/catalogs/helm/sumoffice/icon.png
@@ -35,13 +35,11 @@ annotations:
       email: hello@sumoffice.com
   artifacthub.io/images: |
     - name: sumsheet
-      image: hissih/sumsheet-webhost:2026.10.01-amd64@sha256:5874968f0c3cb576fa1870a32ffb47d99e1cd1d1b298a31b19814e4cb5639d9e
+      image: hissih/sumsheet-webhost:latest@sha256:5874968f0c3cb576fa1870a32ffb47d99e1cd1d1b298a31b19814e4cb5639d9e
     - name: sumdoc
-      image: hissih/sumdoc-webhost:2026.10.01-amd64@sha256:3f7667ee310173ec11121a512de73cfbae82073f660f760ad103c7d50f3e94cc
-    - name: discovery
-      image: python:3.12-alpine
-    - name: front
-      image: nginx:1.27-alpine
+      image: hissih/sumdoc-webhost:latest@sha256:3f7667ee310173ec11121a512de73cfbae82073f660f760ad103c7d50f3e94cc
+    - name: compatibility-server
+      image: hissih/sumoffice-compat:2026.4.0.2@sha256:ae116f65344bc1721a423306bb1de311df25481064edf0aa7fc4757624bcbdc5
   artifacthub.io/changes: |
     - kind: changed
-      description: Pin the released linux/amd64 editor images by tag and digest
+      description: Use compatibility server 2026.4.0.2 with released editor images pinned by digest

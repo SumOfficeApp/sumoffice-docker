@@ -20,7 +20,6 @@ spec:
       labels:
         {{- include "sumoffice.selectorLabels" (list . "sumsheet") | nindent 8 }}
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -41,20 +40,17 @@ spec:
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          command: ["sh", "/opt/sumoffice/start-sumsheet.sh"]
-          env:
-            - name: PUBLIC_URL
-              value: {{ include "sumoffice.publicUrl" . | quote }}
-            - name: WOPI_ALLOW
-              value: {{ include "sumoffice.wopiHostName" . | quote }}
-            - name: NEXTCLOUD_HOST
-              value: {{ include "sumoffice.wopiHostName" . | quote }}
-            - name: MAX_CABINS
-              value: {{ .Values.maxCabins | quote }}
-            - name: IDLE_MIN
-              value: {{ .Values.idleMin | quote }}
-            - name: SUMOFFICE_WOPI_PROOF_DIR
-              value: /data/proof
+          args:
+            - --base-path
+            - /cell
+            - --max-cabins
+            - {{ .Values.maxCabins | quote }}
+            - --idle-min
+            - {{ .Values.idleMin | quote }}
+            - --auth-url
+            - {{ printf "http://%s:8080/host/v1/me" $fullname | quote }}
+            - --attach-url
+            - {{ printf "http://%s:8080/host/v1/attachments/{id}/content" $fullname | quote }}
           ports:
             - name: http
               containerPort: 8092
@@ -71,9 +67,6 @@ spec:
             {{- toYaml $v.resources | nindent 12 }}
           volumeMounts:
             - { name: data, mountPath: /data/cabins, subPath: cabins }
-            - { name: data, mountPath: /data/wopi, subPath: wopi }
-            - { name: proof-key, mountPath: /data/proof, readOnly: true }
-            - { name: scripts, mountPath: /opt/sumoffice/start-sumsheet.sh, subPath: start-sumsheet.sh, readOnly: true }
       volumes:
         - name: data
           {{- if $v.persistence.enabled }}
@@ -82,13 +75,6 @@ spec:
           {{- else }}
           emptyDir: {}
           {{- end }}
-        - name: proof-key
-          secret:
-            secretName: {{ include "sumoffice.proofSecretName" . }}
-            defaultMode: 0400
-        - name: scripts
-          configMap:
-            name: {{ $fullname }}
       {{- with $v.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

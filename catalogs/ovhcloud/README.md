@@ -1,6 +1,6 @@
 # SumOffice — OVHcloud
 
-Status: draft, not yet submitted; needs republished images with the WOPI proof-key fix before submission.
+Status: submission package on released images, not submitted; OVHcloud must assign the final package format.
 
 ## What the OVHcloud Marketplace is
 
@@ -12,11 +12,11 @@ instructions for customers) is decided in that conversation; nothing in this fol
 
 What this folder gives, and what works today without any listing: **`cloud-init.yaml`** for an OVHcloud Public
 Cloud instance. It is the same stack as the other VM catalogs (`../vm/`): Docker, Caddy, the four-service compose of
-`nextcloud/`, one WOPI proof key per instance.
+`nextcloud/`, one connector JWT secret per instance.
 
 ## Use it (customer or owner)
 
-1. Edit the three values in `write_files` (`SUMOFFICE_DOMAIN`, `SUMOFFICE_PUBLIC_URL`, `SUMOFFICE_NEXTCLOUD_URL`;
+1. Edit the three values in `write_files` (`SUMOFFICE_DOMAIN`, `SUMOFFICE_PUBLIC_URL`, `SUMOFFICE_JWT_SECRET`;
    see the comments at the top of the file).
 2. Control Panel → Public Cloud → Instances → Create an instance: image **Ubuntu 24.04**, a model with at least
    2 vCPU / 4 GB (x86-64), then paste the file into the advanced setting "Post-installation script"
@@ -28,14 +28,14 @@ Cloud instance. It is the same stack as the other VM catalogs (`../vm/`): Docker
      --network Ext-Net --user-data catalogs/ovhcloud/cloud-init.yaml sumoffice
    ```
 3. Point the DNS name at the instance's IP (before or after; Caddy retries the certificate), wait for
-   `/var/log/cloud-init-output.log` to end with "SumOffice cloud-init finished", open `https://<name>/hosting/discovery`.
+   `/var/log/cloud-init-output.log` to end with "SumOffice cloud-init finished", open `https://<name>/healthcheck`.
 4. On the Nextcloud host: `sh nextcloud-occ.sh https://<name>`.
 
 Settings can be changed later on the instance with `sudo sumoffice-configure --interactive`.
 
 ## If OVHcloud wants a pre-built image
 
-Build a qcow2 from an Ubuntu 24.04 instance after `sumoffice-install.sh` (no `sumoffice-configure`, so no proof
+Build a qcow2 from an Ubuntu 24.04 instance after `sumoffice-install.sh` (no `sumoffice-configure`, so no secret
 key or `.env` is baked in), clean it like the other VM images (logs, SSH host keys, machine-id,
 `cloud-init clean`), create a snapshot/image, and put `sumoffice-configure` into a cloud-init per-instance
 script, as `../digitalocean/files/var/lib/cloud/scripts/per-instance/001_onboot` does. OVHcloud recommends
@@ -44,7 +44,7 @@ marketplace team confirms that this is the format they want.
 
 What is needed from the owner: the conversation with the OVHcloud Marketplace team (company details, offer
 description, support terms); an OVHcloud Public Cloud project to test the cloud-init file; the images republished
-with the proof-key fix; a tag of this repository with `catalogs/vm/` (the file clones `main`).
+and a tag of this repository with `catalogs/vm/` (the file clones `main`).
 
 ## Checked
 

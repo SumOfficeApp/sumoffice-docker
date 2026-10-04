@@ -1,6 +1,6 @@
 # SumOffice — Vultr Marketplace
 
-Status: draft, not yet submitted; needs republished images with the WOPI proof-key fix before submission.
+Status: submission package on released images, not submitted; real instance round remains an owner gate.
 
 A Vultr Marketplace app is built in the vendor portal (Marketplace → the app → **Builds**) in one of two ways.
 Both are prepared here; Vultr recommends the first when the app allows it.
@@ -10,7 +10,7 @@ Both are prepared here; Vultr recommends the first when the app allows it.
 | **Vendor Data** (imageless) | `vendor-data.sh` | pasted into "Build App Image From Vendor Data" with Ubuntu 24.04 LTS x64; runs once on the customer's fresh server: installs Docker, Caddy and the stack from this repository, starts it on `http://<server IP>` |
 | **Snapshot** | `sumoffice.pkr.hcl`, `scripts/sumoffice-build.sh`, `files/sumoffice-per-instance.sh` | Packer (plugin `github.com/vultr/vultr`, layout of [vultr/vultr-marketplace](https://github.com/vultr/vultr-marketplace) `sample-app`) builds a server, installs everything with the images pulled, runs Vultr's `clean_system`, and snapshots it; the per-instance script starts the stack on first boot |
 
-Both use the shared scripts in `../vm/`. The per-instance work is the same: a new WOPI proof key, `.env`,
+Both use the shared scripts in `../vm/`. The per-instance work is the same: connector secret, `.env`,
 compose override and Caddyfile (`sumoffice-configure --public-url http://<server IP>`), SSH closed while it runs
 (as Vultr's provisioning guide asks), then `sumoffice-first-login` on the first root login asks for the DNS name
 (Let's Encrypt via Caddy) and the Nextcloud address. Ports 80 and 443 are opened in `ufw` when it is present.
@@ -35,7 +35,7 @@ keys, logs, history and machine-id, and zeroes free space.
 
 1. Apply as a vendor: https://www.vultr.com/marketplace/become-a-verified-vendor/
 2. In the vendor account: application profile, general and support information, Readme and App Instructions
-   (Markdown; `{{ip}}` is available, e.g. `http://{{ip}}/hosting/discovery`), gallery images.
+   (Markdown; `{{ip}}` is available, e.g. `http://{{ip}}/healthcheck`), gallery images.
 3. Builds tab: either paste `vendor-data.sh` (set `SUMOFFICE_REF` to a tag that contains `catalogs/vm/`) or pick
    the snapshot from the Packer build → **Build App Image**; test-deploy it, then publish.
 
@@ -44,14 +44,14 @@ Suggested App Instructions:
 ```markdown
 ## SumOffice is starting
 
-* Editors (plain http until you set a DNS name): http://{{ip}}/hosting/discovery
+* Server health (plain http until you set a DNS name): http://{{ip}}/healthcheck
 * SSH in as root: the first login asks for a DNS name pointing at {{ip}} (a Let's Encrypt certificate is issued
   automatically) and for your Nextcloud address.
 * On the Nextcloud host: `sh nextcloud-occ.sh https://<your DNS name>`
   (https://github.com/SumOfficeApp/sumoffice-docker/blob/main/nextcloud/nextcloud-occ.sh)
 ```
 
-What is needed from the owner: a Vultr vendor account; the images republished with the proof-key fix and a tag of
+What is needed from the owner: a Vultr vendor account; a tag of
 this repository with `catalogs/vm/`; logo, screenshots and listing texts.
 
 ## Checked

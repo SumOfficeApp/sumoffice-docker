@@ -1,5 +1,5 @@
 // SumOffice — Azure Application (solution template): one Ubuntu 24.04 LTS VM that runs the SumOffice stack
-// for Nextcloud (SumSheet /f1, SumDoc /a4, WOPI discovery /hosting/*) behind Caddy with a Let's Encrypt
+// compatibility server (SumSheet /cell and SumDoc /word) behind Caddy with a Let's Encrypt
 // certificate for the VM's Azure DNS name (or a DNS name of your own).
 //
 // Source of mainTemplate.json:  bicep build main.bicep --outfile mainTemplate.json
@@ -30,8 +30,9 @@ param authenticationType string = 'sshPublicKey'
 @secure()
 param adminPasswordOrKey string
 
-@description('Address of the Nextcloud your users open, e.g. https://cloud.example.com (the WOPI host allowed to open files).')
-param nextcloudUrl string
+@description('Shared JWT secret entered in the office connector. Use a long random value.')
+@secure()
+param jwtSecret string
 
 @description('Optional DNS name of your own (A/CNAME record pointing at the VM). Use "none" to publish at the Azure DNS name of the public IP address.')
 param customDomain string = 'none'
@@ -170,8 +171,8 @@ resource nic 'Microsoft.Network/networkInterfaces@2025-05-01' = {
 var siteDomain = (empty(customDomain) || toLower(customDomain) == 'none') ? publicIp.properties.dnsSettings.fqdn : customDomain
 var cloudInit = replace(
   replace(replace(loadTextContent('cloud-init.yaml'), '__SUMOFFICE_REF__', sumofficeRef), '__DOMAIN__', siteDomain),
-  '__NEXTCLOUD_URL__',
-  nextcloudUrl
+  '__JWT_SECRET__',
+  jwtSecret
 )
 
 resource vm 'Microsoft.Compute/virtualMachines@2025-04-01' = {
@@ -216,4 +217,4 @@ resource vm 'Microsoft.Compute/virtualMachines@2025-04-01' = {
 output editorsUrl string = 'https://${siteDomain}'
 output azureDnsName string = publicIp.properties.dnsSettings.fqdn
 output sshCommand string = 'ssh ${adminUsername}@${publicIp.properties.dnsSettings.fqdn}'
-output nextcloudCommand string = 'sh nextcloud-occ.sh https://${siteDomain}'
+output healthcheckCommand string = 'curl -fsS https://${siteDomain}/healthcheck'

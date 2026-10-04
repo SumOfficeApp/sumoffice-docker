@@ -1,6 +1,6 @@
 # SumOffice — Azure Marketplace (Azure Application, solution template)
 
-Status: draft, not yet submitted; needs republished images with the WOPI proof-key fix before submission.
+Status: submission package on released images, not submitted; live preview deployment remains an owner gate.
 
 ## Which Azure offer type, and why
 
@@ -20,12 +20,12 @@ repository, runs `../vm/sumoffice-install.sh` and `sumoffice-configure --domain 
 | File | Purpose |
 |---|---|
 | `main.bicep` | source of the template |
-| `cloud-init.yaml` | cloud-config loaded by `main.bicep` (`loadTextContent`); `__SUMOFFICE_REF__`, `__DOMAIN__`, `__NEXTCLOUD_URL__` are replaced with parameters |
+| `cloud-init.yaml` | cloud-config loaded by `main.bicep`; `__SUMOFFICE_REF__`, `__DOMAIN__`, `__JWT_SECRET__` are replaced with parameters |
 | `mainTemplate.json` | ARM template compiled from `main.bicep` (goes into the package) |
 | `createUiDefinition.json` | portal UI: VM name, admin user + SSH key/password, size, SSH source range, Nextcloud address, optional own DNS name (goes into the package) |
 
 Template parameters: `location`, `vmName`, `vmSize`, `adminUsername`, `authenticationType`, `adminPasswordOrKey`,
-`nextcloudUrl`, `customDomain` (`none` = Azure DNS name), `sshSourceAddressPrefix`, `sumofficeRef` (branch/tag
+`jwtSecret`, `customDomain` (`none` = Azure DNS name), `sshSourceAddressPrefix`, `sumofficeRef` (branch/tag
 of this repository, default `main`; it must contain `catalogs/vm/`). Outputs: `editorsUrl`, `azureDnsName`,
 `sshCommand`, `nextcloudCommand`.
 
@@ -41,8 +41,8 @@ bicep build catalogs/azure/main.bicep --outfile catalogs/azure/mainTemplate.json
 az group create -n sumoffice-test -l westeurope
 az deployment group create -g sumoffice-test --template-file catalogs/azure/mainTemplate.json \
   --parameters adminUsername=azureuser adminPasswordOrKey="$(cat ~/.ssh/id_ed25519.pub)" \
-               nextcloudUrl=https://cloud.example.com
-# then: open the editorsUrl output, check /hosting/discovery; cloud-init log: /var/log/cloud-init-output.log
+               jwtSecret='<long-random-secret>'
+# then: open editorsUrl and check /healthcheck; cloud-init log: /var/log/cloud-init-output.log
 
 # Marketplace checks (PowerShell + arm-ttk, https://github.com/Azure/arm-ttk)
 Test-AzTemplate -TemplatePath catalogs/azure
@@ -63,7 +63,7 @@ Test-AzTemplate -TemplatePath catalogs/azure
 4. Review and publish; test the preview offer with the "preview audience" subscription before going live.
 
 What is needed from the owner: Partner Center publisher account; a test Azure subscription; the images
-republished with the proof-key fix; a tag of this repository with `catalogs/vm/` to set as `sumofficeRef`
+a tag of this repository with `catalogs/vm/` to set as `sumofficeRef`
 default; logo and listing texts.
 
 ## Checked

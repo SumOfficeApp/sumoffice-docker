@@ -1,24 +1,20 @@
 #!/bin/sh
 # SumOffice VM appliance — login banner (/etc/update-motd.d/99-sumoffice).
 
-public_url="(not configured yet)"; nextcloud_url="(not configured yet)"
+public_url="(not configured yet)"
 if [ -r /etc/sumoffice/sumoffice.env ]; then
   public_url="$(sed -n 's/^SUMOFFICE_PUBLIC_URL=//p' /etc/sumoffice/sumoffice.env)"
-  nextcloud_url="$(sed -n 's/^SUMOFFICE_NEXTCLOUD_URL=//p' /etc/sumoffice/sumoffice.env)"
 fi
 cat <<EOF
 ********************************************************************************
 
-SumOffice: Excel-compatible (SumSheet, /f1) and Word-compatible (SumDoc, /a4)
-editors for Nextcloud, behind one address.
+SumOffice: Excel-compatible (SumSheet, /cell) and Word-compatible (SumDoc, /word)
+editors behind one compatibility-server address.
 
   Editors address:   ${public_url}
-  Allowed Nextcloud: ${nextcloud_url}
-
   Change settings:   sudo sumoffice-configure --interactive
   Stack:             cd /opt/sumoffice/nextcloud && docker compose ps
-  Connect Nextcloud: sh /opt/sumoffice/nextcloud/nextcloud-occ.sh <editors address>
-                     (run on the Nextcloud host)
+  Health check:      curl -fsS ${public_url}/healthcheck
 
   Documentation:     https://github.com/SumOfficeApp/sumoffice-docker
   Licence:           free for evaluation; production use inside an organisation

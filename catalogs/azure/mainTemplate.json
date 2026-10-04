@@ -55,10 +55,10 @@
         "description": "SSH public key or password for the administrator, depending on authenticationType."
       }
     },
-    "nextcloudUrl": {
-      "type": "string",
+    "jwtSecret": {
+      "type": "securestring",
       "metadata": {
-        "description": "Address of the Nextcloud your users open, e.g. https://cloud.example.com (the WOPI host allowed to open files)."
+        "description": "Shared JWT secret entered in the office connector. Use a long random value."
       }
     },
     "customDomain": {
@@ -84,7 +84,7 @@
     }
   },
   "variables": {
-    "$fxv#0": "#cloud-config\n# SumOffice on an Azure VM (Ubuntu 24.04 LTS). main.bicep loads this file with loadTextContent() and replaces\n# the three __PLACEHOLDERS__ with deployment parameters before passing it as the VM's customData.\n# Log: /var/log/cloud-init-output.log\npackage_update: true\npackage_upgrade: true\npackages:\n  - git\n  - ca-certificates\n  - curl\nruncmd:\n  - [git, clone, --depth, '1', --branch, '__SUMOFFICE_REF__', 'https://github.com/SumOfficeApp/sumoffice-docker', /opt/sumoffice]\n  - [env, 'SUMOFFICE_REF=__SUMOFFICE_REF__', bash, /opt/sumoffice/catalogs/vm/sumoffice-install.sh]\n  - [/usr/local/sbin/sumoffice-configure, --domain, '__DOMAIN__', --nextcloud-url, '__NEXTCLOUD_URL__']\nfinal_message: \"SumOffice cloud-init finished after $UPTIME seconds\"\n",
+    "$fxv#0": "#cloud-config\n# SumOffice on an Azure VM (Ubuntu 24.04 LTS). main.bicep loads this file with loadTextContent() and replaces\n# the three __PLACEHOLDERS__ with deployment parameters before passing it as the VM's customData.\n# Log: /var/log/cloud-init-output.log\npackage_update: true\npackage_upgrade: true\npackages:\n  - git\n  - ca-certificates\n  - curl\nruncmd:\n  - [git, clone, --depth, '1', --branch, '__SUMOFFICE_REF__', 'https://github.com/SumOfficeApp/sumoffice-docker', /opt/sumoffice]\n  - [env, 'SUMOFFICE_REF=__SUMOFFICE_REF__', bash, /opt/sumoffice/catalogs/vm/sumoffice-install.sh]\n  - [/usr/local/sbin/sumoffice-configure, --domain, '__DOMAIN__', --jwt-secret, '__JWT_SECRET__']\nfinal_message: \"SumOffice cloud-init finished after $UPTIME seconds\"\n",
     "dnsLabel": "[toLower(format('sumoffice-{0}', uniqueString(resourceGroup().id, parameters('vmName'))))]",
     "nsgName": "[format('{0}-nsg', parameters('vmName'))]",
     "vnetName": "[format('{0}-vnet', parameters('vmName'))]",
@@ -250,7 +250,7 @@
           "adminUsername": "[parameters('adminUsername')]",
           "adminPassword": "[parameters('adminPasswordOrKey')]",
           "linuxConfiguration": "[if(equals(parameters('authenticationType'), 'password'), null(), variables('linuxConfiguration'))]",
-          "customData": "[base64(replace(replace(replace(variables('$fxv#0'), '__SUMOFFICE_REF__', parameters('sumofficeRef')), '__DOMAIN__', if(or(empty(parameters('customDomain')), equals(toLower(parameters('customDomain')), 'none')), reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName')), '2025-05-01').dnsSettings.fqdn, parameters('customDomain'))), '__NEXTCLOUD_URL__', parameters('nextcloudUrl')))]"
+          "customData": "[base64(replace(replace(replace(variables('$fxv#0'), '__SUMOFFICE_REF__', parameters('sumofficeRef')), '__DOMAIN__', if(or(empty(parameters('customDomain')), equals(toLower(parameters('customDomain')), 'none')), reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName')), '2025-05-01').dnsSettings.fqdn, parameters('customDomain'))), '__JWT_SECRET__', parameters('jwtSecret')))]"
         },
         "networkProfile": {
           "networkInterfaces": [
@@ -279,9 +279,9 @@
       "type": "string",
       "value": "[format('ssh {0}@{1}', parameters('adminUsername'), reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName')), '2025-05-01').dnsSettings.fqdn)]"
     },
-    "nextcloudCommand": {
+    "healthcheckCommand": {
       "type": "string",
-      "value": "[format('sh nextcloud-occ.sh https://{0}', if(or(empty(parameters('customDomain')), equals(toLower(parameters('customDomain')), 'none')), reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName')), '2025-05-01').dnsSettings.fqdn, parameters('customDomain')))]"
+      "value": "[format('curl -fsS https://{0}/healthcheck', if(or(empty(parameters('customDomain')), equals(toLower(parameters('customDomain')), 'none')), reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName')), '2025-05-01').dnsSettings.fqdn, parameters('customDomain')))]"
     }
   }
 }

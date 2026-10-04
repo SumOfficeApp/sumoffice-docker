@@ -31,19 +31,6 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      initContainers:
-        # SumDoc builds older than the shared proof key read <docs-dir>/wopi-proof.json:
-        # give them the same key as SumSheet (the same step as aio/start.sh).
-        - name: proof-key
-          image: {{ include "sumoffice.image" $v.image }}
-          imagePullPolicy: {{ $v.image.pullPolicy }}
-          command:
-            - node
-            - -e
-            - 'const fs=require("fs");const p=fs.readFileSync("/data/proof/proof-key.pem","utf8");fs.writeFileSync("/data/cabins/wopi-proof.json",JSON.stringify({current:{privatePem:p},old:{privatePem:p}}),{mode:0o600})'
-          volumeMounts:
-            - { name: data, mountPath: /data/cabins }
-            - { name: proof-key, mountPath: /data/proof, readOnly: true }
       containers:
         - name: sumdoc
           image: {{ include "sumoffice.image" $v.image }}
@@ -54,18 +41,15 @@ spec:
           {{- end }}
           args:
             - --base-path
-            - /a4
+            - /word
             - --max-cabins
             - {{ .Values.maxCabins | quote }}
             - --idle-min
             - {{ .Values.idleMin | quote }}
-            - --wopi-hosts
-            - {{ include "sumoffice.wopiUrl" . | quote }}
-            - --public-url
-            - {{ printf "%s/a4" (include "sumoffice.publicUrl" .) | quote }}
-          env:
-            - name: SUMOFFICE_WOPI_PROOF_DIR
-              value: /data/proof
+            - --auth-url
+            - {{ printf "http://%s:8080/host/v1/me" $fullname | quote }}
+            - --attach-url
+            - {{ printf "http://%s:8080/host/v1/attachments/{id}/content" $fullname | quote }}
           ports:
             - name: http
               containerPort: 8090
@@ -82,7 +66,6 @@ spec:
             {{- toYaml $v.resources | nindent 12 }}
           volumeMounts:
             - { name: data, mountPath: /data/cabins }
-            - { name: proof-key, mountPath: /data/proof, readOnly: true }
       volumes:
         - name: data
           {{- if $v.persistence.enabled }}
@@ -91,10 +74,6 @@ spec:
           {{- else }}
           emptyDir: {}
           {{- end }}
-        - name: proof-key
-          secret:
-            secretName: {{ include "sumoffice.proofSecretName" . }}
-            defaultMode: 0400
       {{- with $v.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -19,7 +19,7 @@
 import { createServer } from "node:http";
 import { createHmac, createPublicKey, timingSafeEqual, verify as rsaVerify } from "node:crypto";
 
-const EXTENSIONS = ["xlsx", "xlsm", "xlsb", "docx"];
+const EXTENSIONS = ["xlsx", "xlsm", "xlsb", "docx", "pptx"];
 const TOKEN_TTL = 10 * 3600;       // seconds
 const LOCK_TTL = 30 * 60 * 1000;   // MS-WOPI: 30 minutes
 const PROOF_WINDOW = 20 * 60;      // MS-WOPI: 20 minutes of clock skew

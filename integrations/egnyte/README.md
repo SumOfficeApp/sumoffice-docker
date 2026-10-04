@@ -1,6 +1,6 @@
 # SumOffice for Egnyte
 
-This is an Egnyte UI Integration Framework app. **Edit in SumOffice** in the context menu of a `.xlsx`, `.xlsm`, `.xlsb` or `.docx` file opens it in SumSheet (Excel-compatible) or SumDoc (Word-compatible). **Ctrl+S** adds a new version of the same Egnyte file, written with the person's own Egnyte rights.
+This is an Egnyte UI Integration Framework app. **Edit in SumOffice** opens `.xlsx`, `.xlsm` and `.xlsb` in SumSheet, `.docx` in SumDoc, and `.pptx` in SumSlide. **Ctrl+S** adds a new version of the same Egnyte file, written with the person's own Egnyte rights.
 
 The app is a small service (`bridge/`, Node 20+, no dependencies). It does two jobs:
 
@@ -16,9 +16,12 @@ The Egnyte token never reaches the browser. It stays in the service's memory, bo
 
 1. **Run the bridge behind HTTPS.** Egnyte's cloud and the SumOffice servers must both reach it.
 
+   Copy `integrations/egnyte/egnyte-bridge.env.example` outside the repository,
+   fill the values without committing them, then install or replace the named
+   bridge container with one command:
+
    ```bash
-   docker build -t sumoffice-egnyte-bridge integrations/egnyte/bridge
-   docker run -d -p 8790:8790 --env-file egnyte-bridge.env sumoffice-egnyte-bridge
+   ./integrations/egnyte/install.sh /secure/path/egnyte-bridge.env
    ```
 
    | Variable | Meaning |
@@ -33,6 +36,7 @@ The Egnyte token never reaches the browser. It stays in the service's memory, bo
    On the SumOffice side, allow the bridge host:
    - SumSheet: `WOPI_ALLOW=sumoffice-egnyte.example.com`
    - SumDoc: `--wopi-hosts https://sumoffice-egnyte.example.com`
+   - SumSlide: `--wopi-hosts https://sumoffice-egnyte.example.com`
 
 2. **Register the app with Egnyte.**
    1. Fill in `definition.json`: your Public API key, the bridge address in both `serviceUrl`s, and the logo and screenshots.

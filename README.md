@@ -9,17 +9,13 @@ pinned to one:
 
 | image | pinned tag | built from |
 |---|---|---|
-| `sumsheet-webhost` | `2026.09.30-amd64` | SumSheet `cc429a4394` |
-| `sumdoc-webhost` | `2026.09.28-amd64` | SumDoc `cb25e7b6e` |
+| `sumsheet-webhost` | `2026.10.01-amd64` (`sha256:5874968f…`) | released 1 October |
+| `sumdoc-webhost` | `2026.10.01-amd64` (`sha256:3f7667ee…`) | released 1 October |
 | `sumoffice-docsapi` | `2026.09.27-amd64` | unchanged since 27 September |
 | `sumoffice-preview` | `2026.09.28-amd64` | both editors of 28 September |
 
-SumSheet moved from `2026.09.28-amd64` to `2026.09.30-amd64` because the
-28 September image does not carry the SharePoint fix, while the 30 September
-build does. `latest` for `sumsheet-webhost` points at the same 30 September
-image (`sha256:72e45894c7aff14969eb55e2399437460b15c7c3775e04432486ca26565b47e0`);
-for the other images `latest` still points at their 28 September build, so pin
-the dated tag rather than relying on `latest`.
+The catalog and compose files pin dated tags and immutable digests rather than relying on
+`latest`. Docker Hub reported those two linux/amd64 digests on 4 October 2026.
 
 The images were built on an Apple Silicon Mac under Docker's x86-64 emulation;
 **an arm64 image is not part of this release**, and `latest` is a single

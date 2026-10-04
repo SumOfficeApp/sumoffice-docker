@@ -1,0 +1,13 @@
+{
+  "ENABLE_COLLABORATIVE_EDITING": true,
+  "ENABLED_WEB_EDITORS": ["docx", "xlsx", "xlsm", "pptx"],
+  "WEB_EDITORS": [
+    {
+      "url": "/collaboration",
+      "documentServerAddress": "https://a4-server.example.org",
+      "documentServerPort": 443,
+      "jwtSecretEnvironment": "A4_DOCUMENT_SERVER_JWT_SECRET"
+    }
+  ]
+}
+

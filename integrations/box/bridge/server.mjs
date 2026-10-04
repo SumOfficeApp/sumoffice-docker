@@ -18,7 +18,7 @@
 import { createServer } from "node:http";
 import { createHash, createHmac, createPublicKey, randomBytes, timingSafeEqual, verify as rsaVerify } from "node:crypto";
 
-const EXTENSIONS = ["xlsx", "xlsm", "xlsb", "docx"];
+const EXTENSIONS = ["xlsx", "xlsm", "xlsb", "docx", "pptx"];
 const TOKEN_TTL = 10 * 3600;         // seconds, WOPI access token
 const LINK_TTL = 2 * 60 * 1000;      // the one-time link the callback redirects to
 const SESSION_TTL = 24 * 3600 * 1000; // a tab left open for a day still works

@@ -1,9 +1,9 @@
-// SumOffice for kintone: "Open in SumOffice" next to .xlsx, .xlsm, .xlsb and .docx files
+// SumOffice for kintone: "Open in SumOffice" next to .xlsx, .xlsm, .xlsb, .docx and .pptx files
 // in attachment fields of a record. The bridge (see ../bridge) serves the file to
 // SumOffice over WOPI; Ctrl+S puts the new file back into the same field slot.
 (function (PLUGIN_ID) {
   "use strict";
-  var EXTENSIONS = ["xlsx", "xlsm", "xlsb", "docx"];
+  var EXTENSIONS = ["xlsx", "xlsm", "xlsb", "docx", "pptx"];
   var conf = kintone.plugin.app.getConfig(PLUGIN_ID) || {};
   if (!conf.bridgeUrl) return;
   var ticketUrl = conf.bridgeUrl.replace(/\/+$/, "") + "/kintone/ticket";

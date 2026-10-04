@@ -18,7 +18,7 @@
 import { createServer } from "node:http";
 import { createHmac, createPublicKey, randomBytes, timingSafeEqual, verify as rsaVerify } from "node:crypto";
 
-const EXTENSIONS = ["xlsx", "xlsm", "xlsb", "docx"];
+const EXTENSIONS = ["xlsx", "xlsm", "xlsb", "docx", "pptx"];
 const TOKEN_TTL = 10 * 3600;         // seconds, WOPI access token
 const INVOCATION_TTL = 5 * 60 * 1000; // Egnyte: the browser-facing URL expires in 2–5 minutes
 const SESSION_TTL = 24 * 3600 * 1000; // a tab left open for a day still works

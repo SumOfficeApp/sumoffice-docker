@@ -1,6 +1,6 @@
-// "Open in SumOffice" next to an Excel or Word file of a Document.
+// "Open in SumOffice" next to a spreadsheet, document, or presentation.
 define('sum-office:views/fields/sumoffice-file', ['views/fields/file'], function (Dep) {
-    const EXTENSIONS = ['xlsx', 'xlsm', 'xlsb', 'docx'];
+    const EXTENSIONS = ['xlsx', 'xlsm', 'xlsb', 'docx', 'pptx'];
 
     return Dep.extend({
         afterRender: function () {

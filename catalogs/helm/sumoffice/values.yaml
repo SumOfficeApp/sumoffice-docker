@@ -1,0 +1,85 @@
+# Default values for the SumOffice chart.
+#
+# Layout (same as nextcloud/docker-compose.yml in this repository):
+#   compatibility server (:8080) -> /word SumDoc, /cell SumSheet
+
+# -- Address the browser uses to reach the editors (the ingress host, with scheme). Required.
+publicUrl: "https://office.example.com"
+
+# -- Shared secret entered in the connector. Set through --set-string or an encrypted values file.
+jwtSecret: "change-me"
+
+# -- Open documents per editor (one "cabin" process per user and document).
+maxCabins: 8
+# -- Minutes after which an idle cabin is closed.
+idleMin: 15
+
+nameOverride: ""
+fullnameOverride: ""
+
+imagePullSecrets: []
+
+sumsheet:
+  image:
+    repository: hissih/sumsheet-webhost
+    tag: latest@sha256:5874968f0c3cb576fa1870a32ffb47d99e1cd1d1b298a31b19814e4cb5639d9e
+    pullPolicy: IfNotPresent
+  resources:
+    requests: { cpu: 250m, memory: 1Gi }
+    limits: { memory: 4Gi }
+  persistence:
+    enabled: true
+    storageClass: ""
+    accessModes: [ReadWriteOnce]
+    size: 5Gi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+sumdoc:
+  image:
+    repository: hissih/sumdoc-webhost
+    tag: latest@sha256:3f7667ee310173ec11121a512de73cfbae82073f660f760ad103c7d50f3e94cc
+    pullPolicy: IfNotPresent
+  resources:
+    requests: { cpu: 250m, memory: 1Gi }
+    limits: { memory: 4Gi }
+  persistence:
+    enabled: true
+    storageClass: ""
+    accessModes: [ReadWriteOnce]
+    size: 5Gi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+compat:
+  image:
+    repository: hissih/sumoffice-compat
+    tag: 2026.4.0.2@sha256:ae116f65344bc1721a423306bb1de311df25481064edf0aa7fc4757624bcbdc5
+    pullPolicy: IfNotPresent
+  resources:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits: { memory: 256Mi }
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false
+  className: ""
+  # -- WebSocket and long sessions: raise timeouts for your controller (ingress-nginx example below).
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-body-size: "200m"
+  hosts:
+    - host: office.example.com
+  tls: []
+  #  - secretName: office-example-com-tls
+  #    hosts: [office.example.com]
+
+podSecurityContext: {}
+securityContext: {}
+podAnnotations: {}

@@ -1,0 +1,88 @@
+{{- $fullname := include "sumoffice.fullname" . }}
+{{- $v := .Values.sumdoc }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}-sumdoc
+  labels:
+    {{- include "sumoffice.labels" . | nindent 4 }}
+    app.kubernetes.io/component: sumdoc
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "sumoffice.selectorLabels" (list . "sumdoc") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "sumoffice.selectorLabels" (list . "sumdoc") | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: sumdoc
+          image: {{ include "sumoffice.image" $v.image }}
+          imagePullPolicy: {{ $v.image.pullPolicy }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          args:
+            - --base-path
+            - /word
+            - --max-cabins
+            - {{ .Values.maxCabins | quote }}
+            - --idle-min
+            - {{ .Values.idleMin | quote }}
+            - --auth-url
+            - {{ printf "http://%s:8080/host/v1/me" $fullname | quote }}
+            - --attach-url
+            - {{ printf "http://%s:8080/host/v1/attachments/{id}/content" $fullname | quote }}
+          ports:
+            - name: http
+              containerPort: 8090
+              protocol: TCP
+          readinessProbe:
+            tcpSocket: { port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket: { port: http }
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            {{- toYaml $v.resources | nindent 12 }}
+          volumeMounts:
+            - { name: data, mountPath: /data/cabins }
+      volumes:
+        - name: data
+          {{- if $v.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ $fullname }}-sumdoc
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+      {{- with $v.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $v.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $v.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

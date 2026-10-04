@@ -1,0 +1,28 @@
+#!/bin/bash
+# Join script: publish the editors through the UCS Apache on /f1, /a4 and /hosting (one origin for Nextcloud).
+VERSION=1
+. /usr/share/univention-join/joinscripthelper.lib
+joinscript_init
+
+cat >/etc/apache2/conf-available/sumoffice.conf <<'EOF'
+# SumOffice editors (SumSheet /f1, SumDoc /a4, WOPI discovery /hosting) on 127.0.0.1:8093.
+# Needs Apache >= 2.4.47 (upgrade=websocket), i.e. UCS 5.2. ProxyPass in the server config is inherited
+# by the UCS virtual hosts (ProxyPassInherit is on by default).
+<IfModule mod_proxy.c>
+  ProxyPreserveHost On
+  ProxyTimeout 3600
+  RequestHeader set X-Forwarded-Proto "https" env=HTTPS
+  ProxyPass /f1 http://127.0.0.1:8093/f1 upgrade=websocket retry=0
+  ProxyPassReverse /f1 http://127.0.0.1:8093/f1
+  ProxyPass /a4 http://127.0.0.1:8093/a4 upgrade=websocket retry=0
+  ProxyPassReverse /a4 http://127.0.0.1:8093/a4
+  ProxyPass /hosting http://127.0.0.1:8093/hosting retry=0
+  ProxyPassReverse /hosting http://127.0.0.1:8093/hosting
+</IfModule>
+EOF
+a2enmod -q proxy proxy_http proxy_wstunnel headers || die
+a2enconf -q sumoffice || die
+systemctl reload apache2 || die
+
+joinscript_save_current_version
+exit 0

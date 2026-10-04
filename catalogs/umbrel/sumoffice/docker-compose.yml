@@ -1,0 +1,27 @@
+version: "3.7"
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: sumoffice_web_1
+      APP_PORT: 8093
+      # Nextcloud fetches /hosting/discovery server-side and the editor frame is embedded in Nextcloud:
+      # the Umbrel login in front would break both.
+      PROXY_AUTH_ADD: "false"
+
+  web:
+    # Pin a multi-arch digest before submission (amd64 + arm64 are both required on Umbrel):
+    # image: hissih/sumoffice-aio:v1@sha256:<digest>
+    image: hissih/sumoffice-aio:v1
+    restart: on-failure
+    stop_grace_period: 1m
+    volumes:
+      - ${APP_DATA_DIR}/data:/data
+    environment:
+      TZ: Etc/UTC
+      # Address the browser uses (Umbrel serves the app on its manifest port).
+      PUBLIC_URL: "http://${DEVICE_DOMAIN_NAME}:8093"
+      # The Nextcloud app of this Umbrel, as the browser reaches it (WOPI host allowed to open files).
+      NEXTCLOUD_HOST: "${DEVICE_DOMAIN_NAME}"
+      NEXTCLOUD_URL: "http://${DEVICE_DOMAIN_NAME}:8081"
+      MAX_CABINS: "4"

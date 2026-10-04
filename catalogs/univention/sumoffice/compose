@@ -1,0 +1,16 @@
+version: "2.4"
+services:
+  sumoffice:
+    # One image: SumSheet (/f1) + SumDoc (/a4) + joint WOPI discovery (/hosting/*) + front on 8093.
+    image: hissih/sumoffice-aio:v1
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8093:8093"
+    volumes:
+      - /var/lib/univention-appcenter/apps/sumoffice/data:/data
+    environment:
+      # Filled by the App Center from the "settings" file (sumoffice/public_url, sumoffice/wopi_host, ...).
+      PUBLIC_URL: "@%@sumoffice/public_url@%@"
+      NEXTCLOUD_HOST: "@%@sumoffice/wopi_host@%@"
+      NEXTCLOUD_URL: "@%@sumoffice/wopi_url@%@"
+      MAX_CABINS: "@%@sumoffice/max_cabins@%@"

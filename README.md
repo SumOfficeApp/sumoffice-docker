@@ -11,6 +11,7 @@ pinned to one:
 |---|---|---|
 | `sumsheet-webhost` | `2026.10.01-amd64` (`sha256:5874968f…`) | released 1 October |
 | `sumdoc-webhost` | `2026.10.01-amd64` (`sha256:3f7667ee…`) | released 1 October |
+| `sumslide-server` | `2026.10.07-amd64` | first public release; FastOffices/office-app#1826 |
 | `sumoffice-docsapi` | `2026.09.27-amd64` | unchanged since 27 September |
 | `sumoffice-preview` | `2026.09.28-amd64` | both editors of 28 September |
 
@@ -25,13 +26,13 @@ architecture differs from the engine inside it.
 
 ## Nextcloud — three steps
 
-Nextcloud Office allows one editor origin, so both editors sit behind one nginx: SumSheet at `/f1`, SumDoc at `/a4`, WOPI discovery at `/hosting/*`.
+Nextcloud Office allows one editor origin, so all three editors sit behind one nginx: SumSheet at `/f1`, SumDoc at `/a4`, SumSlide at `/slides`, WOPI discovery at `/hosting/*`.
 
 ```sh
 git clone https://github.com/SumOfficeApp/sumoffice-docker && cd sumoffice-docker/nextcloud
 cp env.example .env            # PUBLIC_URL = the address you give this stack; NEXTCLOUD_URL = your Nextcloud
                                # NEXTCLOUD_HOST is a bare hostname — no scheme, no port
-sh sdelat-proof-klyuch.sh      # one signing key for both editors, once
+sh sdelat-proof-klyuch.sh      # one signing key for all editors, once
 docker compose up -d           # 1. start the editors (put your TLS proxy in front of :8093)
 sh nextcloud-occ.sh https://office.example.com   # 2. on the Nextcloud host: three occ settings, one activation
 ```
@@ -46,7 +47,7 @@ The editor runs in a frame inside Nextcloud and keeps your sign-in in a cookie. 
 belong to different sites, that cookie is a third-party cookie: Safari and private windows in Chrome
 block it, and the frame shows "Sign-in required". Measured 6 October 2026 on Nextcloud 32.0.15.
 
-3. Open any `.xlsx`, `.xlsm` or `.docx` in Nextcloud Files. It opens in the real engine; Save writes the same file back.
+3. Open any `.xlsx`, `.xlsm`, `.docx` or `.pptx` in Nextcloud Files. It opens in the real engine; Save writes the same file back.
 
 **If the browser says "document failed to load", check `wopi_allowlist` first.**
 That setting lists the addresses Nextcloud accepts WOPI calls from — the editors call

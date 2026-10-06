@@ -39,7 +39,12 @@ sh nextcloud-occ.sh https://office.example.com   # 2. on the Nextcloud host: thr
 `sdelat-proof-klyuch.sh` matters for any host that verifies WOPI signatures — Odoo does by default,
 SharePoint always. The two editors each sign with their own key otherwise, while the shared
 `/hosting/discovery` can carry only one: the host then rejects everything the other editor signed.
-Nextcloud Office does not verify signatures, so this step is invisible there and bites elsewhere.
+Nextcloud Office verifies them too (`Invalid WOPI proof` in its log), so run it once before the first start.
+
+**Put this stack on the same site as Nextcloud** — `office.example.com` next to `cloud.example.com`.
+The editor runs in a frame inside Nextcloud and keeps your sign-in in a cookie. When the two addresses
+belong to different sites, that cookie is a third-party cookie: Safari and private windows in Chrome
+block it, and the frame shows "Sign-in required". Measured 6 October 2026 on Nextcloud 32.0.15.
 
 3. Open any `.xlsx`, `.xlsm` or `.docx` in Nextcloud Files. It opens in the real engine; Save writes the same file back.
 

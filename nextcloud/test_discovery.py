@@ -4,16 +4,16 @@ import xml.etree.ElementTree as ET
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 A4_XML = ('<wopi-discovery><net-zone name="external-https"><app name="writer">'
-          '<action name="edit" ext="docx" default="true" urlsrc="https://office.example.com/a4/wopi/edit?"/>'
-          '<action name="view" ext="docx" urlsrc="https://office.example.com/a4/wopi/edit?"/></app>'
+          '<action name="edit" ext="docx" default="true" urlsrc="https://office.example.com/docs/wopi/edit?"/>'
+          '<action name="view" ext="docx" urlsrc="https://office.example.com/docs/wopi/edit?"/></app>'
           '<app name="application/vnd.openxmlformats-officedocument.wordprocessingml.document">'
-          '<action name="edit" ext="" default="true" urlsrc="https://office.example.com/a4/wopi/edit?"/></app>'
+          '<action name="edit" ext="" default="true" urlsrc="https://office.example.com/docs/wopi/edit?"/></app>'
           '</net-zone><proof-key value="AAA" modulus="MMM" exponent="AQAB"/></wopi-discovery>')
 F1_XML = ('<wopi-discovery><net-zone name="external-https"><app name="FastSheet">'
-          '<action name="edit" ext="xlsx" default="true" urlsrc="https://office.example.com/f1/wopi/edit?"/>'
-          '<action name="view" ext="xlsx" urlsrc="https://office.example.com/f1/wopi/edit?"/></app>'
+          '<action name="edit" ext="xlsx" default="true" urlsrc="https://office.example.com/sheets/wopi/edit?"/>'
+          '<action name="view" ext="xlsx" urlsrc="https://office.example.com/sheets/wopi/edit?"/></app>'
           '<app name="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">'
-          '<action name="edit" ext="" default="true" urlsrc="https://office.example.com/f1/wopi/edit?"/></app>'
+          '<action name="edit" ext="" default="true" urlsrc="https://office.example.com/sheets/wopi/edit?"/></app>'
           '</net-zone><proof-key value="AAA" modulus="MMM" exponent="AQAB"/></wopi-discovery>')
 
 def fake(body):
@@ -52,9 +52,9 @@ class JointDiscovery(unittest.TestCase):
         excel = {(x.get("name"), x.get("ext")) for x in apps["Excel"].findall("action")}
         self.assertEqual(excel, {(n, e) for n in ("view", "edit") for e in ("xlsx", "xlsm", "xlsb")})
         for a in apps["Excel"].findall("action"):
-            self.assertTrue(a.get("urlsrc").startswith("https://office.example.com/f1/"))
+            self.assertTrue(a.get("urlsrc").startswith("https://office.example.com/sheets/"))
         for a in apps["Word"].findall("action"):
-            self.assertTrue(a.get("urlsrc").startswith("https://office.example.com/a4/"))
+            self.assertTrue(a.get("urlsrc").startswith("https://office.example.com/docs/"))
         # hosts that key actions by extension keep the last action: it must be edit
         last = {}
         for a in apps["Excel"].findall("action"): last[a.get("ext")] = a.get("name")

@@ -11,7 +11,7 @@ pinned to one:
 |---|---|---|
 | `sumsheet-webhost` | `2026.10.01-amd64` (`sha256:5874968f…`) | released 1 October |
 | `sumdoc-webhost` | `2026.10.01-amd64` (`sha256:3f7667ee…`) | released 1 October |
-| `sumslide-server` | `2026.10.07-amd64` | first public release; FastOffices/office-app#1826 |
+| `sumslide-server` | `2026.10.07-amd64` (`sha256:2d966620…`) | first public release; FastOffices/office-app#1826 |
 | `sumoffice-docsapi` | `2026.09.27-amd64` | unchanged since 27 September |
 | `sumoffice-preview` | `2026.09.28-amd64` | both editors of 28 September |
 
@@ -26,7 +26,7 @@ architecture differs from the engine inside it.
 
 ## Nextcloud — three steps
 
-Nextcloud Office allows one editor origin, so all three editors sit behind one nginx: SumSheet at `/f1`, SumDoc at `/a4`, SumSlide at `/slides`, WOPI discovery at `/hosting/*`.
+Nextcloud Office allows one editor origin, so all three editors sit behind one nginx: SumSheet at `/sheets`, SumDoc at `/docs`, SumSlide at `/slides`, WOPI discovery at `/hosting/*`.
 
 ```sh
 git clone https://github.com/SumOfficeApp/sumoffice-docker && cd sumoffice-docker/nextcloud

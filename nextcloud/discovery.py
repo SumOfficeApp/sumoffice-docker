@@ -1,4 +1,4 @@
-# One WOPI discovery for three editors: DOCX → SumDoc (/a4), XLSX/XLSM/XLSB → SumSheet (/f1), PPTX → SumSlide (/slides).
+# One WOPI discovery for three editors: DOCX → SumDoc (/docs), XLSX/XLSM/XLSB → SumSheet (/sheets), PPTX → SumSlide (/slides).
 # Nextcloud reads discovery from one address; each action's urlsrc may point to its own editor.
 # Temporary glue until the images publish a joint discovery themselves.
 import http.server, urllib.request, re, sys, os

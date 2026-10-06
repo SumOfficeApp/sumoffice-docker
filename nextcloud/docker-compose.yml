@@ -1,6 +1,6 @@
-# SumOffice editors for Nextcloud — one public address, two editors behind it.
+# SumOffice editors for Nextcloud — one public address, three editors behind it.
 # Nextcloud allows exactly one origin for the editor frame (CSP), so SumSheet
-# lives at /f1 and SumDoc at /a4 behind one nginx; /hosting/* is the WOPI
+# lives at /f1, SumDoc at /a4 and SumSlide at /slides behind one nginx; /hosting/* is the WOPI
 # discovery Nextcloud reads. Put your TLS reverse proxy in front of :8093
 # (e.g. https://office.example.com → 127.0.0.1:8093).
 #
@@ -9,14 +9,14 @@
 name: sumoffice-nextcloud
 services:
   sumsheet:
-    image: hissih/sumsheet-webhost:latest@sha256:5874968f0c3cb576fa1870a32ffb47d99e1cd1d1b298a31b19814e4cb5639d9e
+    image: hissih/sumsheet-webhost:2026.10.01-amd64@sha256:5874968f0c3cb576fa1870a32ffb47d99e1cd1d1b298a31b19814e4cb5639d9e
     platform: linux/amd64
     restart: unless-stopped
     volumes: ["sumsheet-cabins:/data/cabins", "sumsheet-wopi:/data/wopi", "./proof-key.pem:/data/wopi/proof-key.pem:ro", "./start-sumsheet.sh:/start.sh:ro"]
     environment: { PUBLIC_URL: "${PUBLIC_URL}", NEXTCLOUD_HOST: "${NEXTCLOUD_HOST}" }
     entrypoint: ["sh", "/start.sh"]
   sumdoc:
-    image: hissih/sumdoc-webhost:latest@sha256:3f7667ee310173ec11121a512de73cfbae82073f660f760ad103c7d50f3e94cc
+    image: hissih/sumdoc-webhost:2026.10.01-amd64@sha256:3f7667ee310173ec11121a512de73cfbae82073f660f760ad103c7d50f3e94cc
     platform: linux/amd64
     restart: unless-stopped
     volumes: ["sumdoc-cabins:/data/cabins", "./wopi-proof.json:/data/cabins/wopi-proof.json:ro"]
@@ -26,16 +26,28 @@ services:
     # Odoo by default, SharePoint always.
     command: ["--base-path", "/a4", "--max-cabins", "8", "--idle-min", "15",
               "--wopi-hosts", "${NEXTCLOUD_URL}", "--public-url", "${PUBLIC_URL}/a4"]
+  sumslide:
+    image: hissih/sumslide-server:2026.10.07-amd64
+    platform: linux/amd64
+    restart: unless-stopped
+    environment: { PUBLIC_URL: "${PUBLIC_URL}" }
+    volumes: ["./proof-key.pem:/keys/proof-key.pem:ro"]
+    # The same signing key as the other two editors (see sdelat-proof-klyuch.sh). SumSlide
+    # refuses a key that is not its own file with mode 0600, and the mounted file belongs
+    # to whoever created it on the host — so it starts as root, takes a private copy owned
+    # by its own user, and drops to that user before serving anything.
+    user: "0"
+    entrypoint: ["sh", "-c", "cp /keys/proof-key.pem /tmp/proof-key.pem && chown node:node /tmp/proof-key.pem && chmod 600 /tmp/proof-key.pem && exec setpriv --reuid=node --regid=node --init-groups node /app/slides-server.mjs --wopi --base-path /slides --public-url \"$$PUBLIC_URL/slides\" --host 0.0.0.0 --port 8094 --dist /app/dist --proof-key-file /tmp/proof-key.pem --max-cabins 8 --idle-min 15"]
   discovery:
     image: python:3.12-alpine
     restart: unless-stopped
     volumes: ["./discovery.py:/discovery.py:ro"]
-    environment: { PUBLIC_URL: "${PUBLIC_URL}" }
+    environment: { PUBLIC_URL: "${PUBLIC_URL}", SLIDES_URL: "http://sumslide:8094" }
     command: ["python3", "/discovery.py"]
   front:
     image: nginx:1.27-alpine
     restart: unless-stopped
     ports: ["127.0.0.1:8093:8093"]
     volumes: ["./nginx.conf:/etc/nginx/conf.d/default.conf:ro"]
-    depends_on: [sumsheet, sumdoc, discovery]
+    depends_on: [sumsheet, sumdoc, sumslide, discovery]
 volumes: { sumsheet-cabins: {}, sumsheet-wopi: {}, sumdoc-cabins: {} }

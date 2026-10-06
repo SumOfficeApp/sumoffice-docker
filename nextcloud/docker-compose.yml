@@ -1,6 +1,6 @@
 # SumOffice editors for Nextcloud — one public address, three editors behind it.
 # Nextcloud allows exactly one origin for the editor frame (CSP), so SumSheet
-# lives at /f1, SumDoc at /a4 and SumSlide at /slides behind one nginx; /hosting/* is the WOPI
+# lives at /sheets, SumDoc at /docs and SumSlide at /slides behind one nginx; /hosting/* is the WOPI
 # discovery Nextcloud reads. Put your TLS reverse proxy in front of :8093
 # (e.g. https://office.example.com → 127.0.0.1:8093).
 #
@@ -24,10 +24,10 @@ services:
     # /hosting/discovery can carry only one key, yet both editors sign. Different
     # keys mean half the calls fail verification on a host that does verify —
     # Odoo by default, SharePoint always.
-    command: ["--base-path", "/a4", "--max-cabins", "8", "--idle-min", "15",
-              "--wopi-hosts", "${NEXTCLOUD_URL}", "--public-url", "${PUBLIC_URL}/a4"]
+    command: ["--base-path", "/docs", "--max-cabins", "8", "--idle-min", "15",
+              "--wopi-hosts", "${NEXTCLOUD_URL}", "--public-url", "${PUBLIC_URL}/docs"]
   sumslide:
-    image: hissih/sumslide-server:2026.10.07-amd64
+    image: hissih/sumslide-server:2026.10.07-amd64@sha256:2d966620a86aba7ac2861de4368746d9250aeae23823f350d82c02783eed9fdf
     platform: linux/amd64
     restart: unless-stopped
     environment: { PUBLIC_URL: "${PUBLIC_URL}" }

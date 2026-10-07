@@ -1,4 +1,4 @@
-SumOffice serves two editors on this host: SumSheet at /f1 (Excel workbooks) and SumDoc at /a4 (Word documents),
+SumOffice serves two editors on this host: SumSheet at /sheets (Excel workbooks) and SumDoc at /docs (Word documents),
 with a joint WOPI discovery at /hosting/discovery.
 
 To connect Nextcloud (for example the Nextcloud app of this UCS): Administration settings, Office,

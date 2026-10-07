@@ -1,7 +1,7 @@
 version: "2.4"
 services:
   sumoffice:
-    # One image: SumSheet (/f1) + SumDoc (/a4) + joint WOPI discovery (/hosting/*) + front on 8093.
+    # One image: SumSheet (/sheets) + SumDoc (/docs) + joint WOPI discovery (/hosting/*) + front on 8093.
     image: hissih/sumoffice-aio:v1
     restart: unless-stopped
     ports:

@@ -1,4 +1,4 @@
-// One origin for both editors: /f1 → SumSheet, /a4 → SumDoc, /hosting/* → joint WOPI discovery.
+// One origin for both editors: /sheets → SumSheet, /docs → SumDoc, /hosting/* → joint WOPI discovery.
 // Plain Node (no nginx/python in the image). WebSocket upgrades are passed through.
 import http from "node:http";
 import net from "node:net";
@@ -9,8 +9,8 @@ const F1 = { host: "127.0.0.1", port: 8092 };
 const A4 = { host: "127.0.0.1", port: 8090 };
 
 function upstreamFor(path) {
-  if (path === "/f1" || path.startsWith("/f1/")) return F1;
-  if (path === "/a4" || path.startsWith("/a4/")) return A4;
+  if (path === "/sheets" || path.startsWith("/sheets/")) return F1;
+  if (path === "/docs" || path.startsWith("/docs/")) return A4;
   return null;
 }
 
@@ -95,4 +95,4 @@ server.on("upgrade", (req, socket, head) => {
   s.on("error", () => socket.destroy()); socket.on("error", () => s.destroy());
 });
 
-server.listen(PORT, "0.0.0.0", () => console.error(`[front] :${PORT} → /f1 ${F1.port}, /a4 ${A4.port}, /hosting/* joint discovery`));
+server.listen(PORT, "0.0.0.0", () => console.error(`[front] :${PORT} → /sheets ${F1.port}, /docs ${A4.port}, /hosting/* joint discovery`));

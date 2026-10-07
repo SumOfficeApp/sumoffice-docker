@@ -10,7 +10,7 @@ Status: draft, not yet submitted; needs republished multi-arch images (amd64+arm
 | `sumoffice.ini` | app metadata (`DockerMainService`, conflicts with Collabora, web interface, RAM) |
 | `compose` | the compose file: `hissih/sumoffice-aio:v1` on `127.0.0.1:8093`, data in `/var/lib/univention-appcenter/apps/sumoffice/data` |
 | `settings` | install/settings form: public URL, WOPI host name, WOPI host URL, open documents per editor |
-| `inst` / `uinst` | join/unjoin scripts: Apache reverse proxy (with WebSocket) for `/f1`, `/a4`, `/hosting` |
+| `inst` / `uinst` | join/unjoin scripts: Apache reverse proxy (with WebSocket) for `/sheets`, `/docs`, `/hosting` |
 | `README_EN` | text shown in the App Center after install |
 
 Why one image: the four-service compose in `nextcloud/` mounts `nginx.conf` and `discovery.py` from its folder;

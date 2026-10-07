@@ -13,7 +13,7 @@ and `latest` is a single `linux/amd64` image rather than a multi-architecture li
 docker run -d --name sumsheet --restart unless-stopped --platform linux/amd64 \
   -p 127.0.0.1:8092:8092 -v /srv/sumsheet-cabins:/data/cabins \
   hissih/sumsheet-webhost:2026.09.30-amd64 \
-  --base-path /f1 --max-cabins 12 --idle-min 20 \
+  --base-path /sheets --max-cabins 12 --idle-min 20 \
   --auth-url   'https://your-system/v1/me' \
   --attach-url 'https://your-system/v1/attachments/{id}/content'
 
@@ -21,11 +21,11 @@ docker run -d --name sumsheet --restart unless-stopped --platform linux/amd64 \
 docker run -d --name sumdoc --restart unless-stopped --platform linux/amd64 \
   -p 127.0.0.1:8090:8090 -v /srv/sumdoc-cabins:/data/cabins \
   hissih/sumdoc-webhost:2026.09.28-amd64 \
-  --base-path /a4 --max-cabins 12 --idle-min 20 \
+  --base-path /docs --max-cabins 12 --idle-min 20 \
   --auth-url   'https://your-system/v1/me' \
   --attach-url 'https://your-system/v1/attachments/{id}/content'
 ```
 
-Check: `curl http://127.0.0.1:8092/f1/health` (and `/a4/health`) — the answer contains `"status": "ok"` and `"skewMin": 0`; the second means the editor and the engine are from the same release.
+Check: `curl http://127.0.0.1:8092/sheets/health` (and `/docs/health`) — the answer contains `"status": "ok"` and `"skewMin": 0`; the second means the editor and the engine are from the same release.
 
 `--auth-url` is asked with the user's cookie and must answer 200 for a signed-in user; `--attach-url` returns the file bytes by id. That is the whole contract — the editors have no user database of their own. Integration details: https://docs.sumoffice.com

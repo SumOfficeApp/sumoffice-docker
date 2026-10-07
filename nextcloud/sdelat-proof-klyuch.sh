@@ -1,5 +1,5 @@
 #!/bin/sh
-# One signing key for both editors. Run once, before `docker compose up -d`.
+# One signing key for all editors. Run once, before `docker compose up -d`.
 #
 # WHY. A host that verifies WOPI signatures — Odoo by default, SharePoint always —
 # takes the public key out of the shared /hosting/discovery and checks every call

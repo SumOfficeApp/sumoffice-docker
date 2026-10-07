@@ -5,8 +5,8 @@ One image with both editors and the joint WOPI discovery, for platforms that run
 
 | Path | What |
 |---|---|
-| `/f1` | SumSheet — Excel workbooks (`.xlsx`, `.xlsm`, `.xlsb`) |
-| `/a4` | SumDoc — Word documents (`.docx`) |
+| `/sheets` | SumSheet — Excel workbooks (`.xlsx`, `.xlsm`, `.xlsb`) |
+| `/docs` | SumDoc — Word documents (`.docx`) |
 | `/hosting/discovery`, `/hosting/capabilities` | WOPI discovery for both editors (also the SharePoint `internal-https` zone over https) |
 
 ## Build

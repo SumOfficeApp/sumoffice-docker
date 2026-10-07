@@ -26,8 +26,8 @@ services:
     platform: linux/amd64
     restart: unless-stopped
     volumes: ["sumdoc-cabins:/data/cabins", "./proof/wopi-proof.json:/data/cabins/wopi-proof.json:ro"]
-    command: ["--base-path", "/a4", "--max-cabins", "${MAX_CABINS:-8}", "--idle-min", "15",
-              "--wopi-hosts", "http://docsapi:8797", "--public-url", "${PUBLIC_URL}/a4"]
+    command: ["--base-path", "/docs", "--max-cabins", "${MAX_CABINS:-8}", "--idle-min", "15",
+              "--wopi-hosts", "http://docsapi:8797", "--public-url", "${PUBLIC_URL}/docs"]
   preview:
     image: hissih/sumoffice-preview:2026.09.28-amd64
     restart: unless-stopped

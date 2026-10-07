@@ -1,6 +1,6 @@
 captainVersion: 4
 services:
-    # SumOffice: SumSheet (/f1) + SumDoc (/a4) + joint WOPI discovery (/hosting/*) in one container on port 8093.
+    # SumOffice: SumSheet (/sheets) + SumDoc (/docs) + joint WOPI discovery (/hosting/*) in one container on port 8093.
     $$cap_appname:
         image: hissih/sumoffice-aio:$$cap_sumoffice_version
         restart: unless-stopped

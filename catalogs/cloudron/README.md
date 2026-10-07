@@ -6,7 +6,7 @@ Files: `CloudronManifest.json`, `Dockerfile`, `start.sh`, `front.mjs` (copy of `
 `aio-single-image` branch), `DESCRIPTION.md`, `POSTINSTALL.md`, `CHANGELOG`.
 
 The package wraps the whole stack in one container, as Cloudron requires: SumSheet (cabin manager `:8095` + WOPI
-facade `:8092`), SumDoc (`:8090`) and the Node front on `:8093` that serves `/f1`, `/a4` and the joint discovery
+facade `:8092`), SumDoc (`:8090`) and the Node front on `:8093` that serves `/sheets`, `/docs` and the joint discovery
 `/hosting/*`. It is built `FROM cloudron/base` with the editor code copied out of `hissih/sumsheet-webhost` and
 `hissih/sumdoc-webhost`.
 

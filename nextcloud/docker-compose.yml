@@ -36,6 +36,11 @@ services:
     # refuses a key that is not its own file with mode 0600, and the mounted file belongs
     # to whoever created it on the host — so it starts as root, takes a private copy owned
     # by its own user, and drops to that user before serving anything.
+    # The image checks its default port and path; here it listens on 8094 under /slides.
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8094/slides/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
     user: "0"
     entrypoint: ["sh", "-c", "cp /keys/proof-key.pem /tmp/proof-key.pem && chown node:node /tmp/proof-key.pem && chmod 600 /tmp/proof-key.pem && exec setpriv --reuid=node --regid=node --init-groups node /app/slides-server.mjs --wopi --base-path /slides --public-url \"$$PUBLIC_URL/slides\" --host 0.0.0.0 --port 8094 --dist /app/dist --proof-key-file /tmp/proof-key.pem --max-cabins 8 --idle-min 15"]
   discovery:

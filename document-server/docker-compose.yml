@@ -2,6 +2,7 @@ name: sumoffice-document-server
 services:
   docsapi:
     image: hissih/sumoffice-docsapi:2026.09.27-amd64
+    platform: linux/amd64
     restart: unless-stopped
     environment:
       DOCSAPI_PUBLIC_URL: ${PUBLIC_URL:?set PUBLIC_URL in .env}
@@ -30,6 +31,7 @@ services:
               "--wopi-hosts", "http://docsapi:8797", "--public-url", "${PUBLIC_URL}/docs"]
   preview:
     image: hissih/sumoffice-preview:2026.09.28-amd64
+    platform: linux/amd64
     restart: unless-stopped
   discovery:
     image: python:3.12-alpine

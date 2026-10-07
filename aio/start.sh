@@ -16,16 +16,16 @@ export SUMOFFICE_WOPI_PROOF_DIR=/data/proof
 
 cd /app
 node apps/desktop-shell/webhost/cabin-manager.mjs --docs-dir /data/sumsheet --template /app/blank.xlsx --port 8095 \
-  --base-path /f1 --max-cabins "${MAX_CABINS:-8}" --idle-min 15 \
+  --base-path /sheets --max-cabins "${MAX_CABINS:-8}" --idle-min 15 \
   --auth-url http://127.0.0.1:8092/v1/me --attach-url 'http://127.0.0.1:8092/v1/attachments/{id}/content' &
 sleep 3
 node apps/desktop-shell/webhost/wopi-facade.mjs --port 8092 --manager http://127.0.0.1:8095 \
-  --public-url "$PUBLIC_URL/f1" --state-dir /data/wopi --idle-min 30 --wopi-allow "$NEXTCLOUD_HOST" &
+  --public-url "$PUBLIC_URL/sheets" --state-dir /data/wopi --idle-min 30 --wopi-allow "$NEXTCLOUD_HOST" &
 
 cd /opt/sumdoc
 FASTDOC_CLI_BIN=/opt/sumdoc/release/runtime/native/fastdoc-cli \
 node apps/fastdoc-shell/webhost/cabin-manager.mjs --docs-dir /data/sumdoc --template /opt/sumdoc/blank.docx --port 8090 \
-  --base-path /a4 --max-cabins "${MAX_CABINS:-8}" --idle-min 15 --wopi-hosts "$NEXTCLOUD_URL" --public-url "$PUBLIC_URL/a4" &
+  --base-path /docs --max-cabins "${MAX_CABINS:-8}" --idle-min 15 --wopi-hosts "$NEXTCLOUD_URL" --public-url "$PUBLIC_URL/docs" &
 
 node /opt/sumoffice/front.mjs &
 # If any part dies, the container dies — the orchestrator restarts it whole.

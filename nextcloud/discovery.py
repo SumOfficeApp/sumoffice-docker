@@ -1,9 +1,9 @@
-# One WOPI discovery for two editors: DOCX → SumDoc (/a4), XLSX/XLSM/XLSB → SumSheet (/f1).
+# One WOPI discovery for three editors: DOCX → SumDoc (/docs), XLSX/XLSM/XLSB → SumSheet (/sheets), PPTX → SumSlide (/slides).
 # Nextcloud reads discovery from one address; each action's urlsrc may point to its own editor.
 # Temporary glue until the images publish a joint discovery themselves.
 import http.server, urllib.request, re, sys, os
 PUBLIC = os.environ.get("PUBLIC_URL", "http://localhost:8093").rstrip("/")
-A4 = os.environ.get("SUMDOC_URL", "http://sumdoc:8090"); F1 = os.environ.get("SUMSHEET_URL", "http://sumsheet:8092")
+A4 = os.environ.get("SUMDOC_URL", "http://sumdoc:8090"); F1 = os.environ.get("SUMSHEET_URL", "http://sumsheet:8092"); SLIDES = os.environ.get("SLIDES_URL", "")
 def fetch(u):
     try: return urllib.request.urlopen(u, timeout=10).read().decode("utf-8", "replace")
     except Exception as e: return ""
@@ -40,6 +40,9 @@ class H(http.server.BaseHTTPRequestHandler):
                     extra.append(f'<app name="{mime}"><action name="edit" ext="{ext}" default="true" urlsrc="{src}"/><action name="view" ext="{ext}" urlsrc="{src}"/></app><app name="calc"><action name="edit" ext="{ext}" default="true" urlsrc="{src}"/></app>')
             # Nextcloud expects a Capabilities app pointing at /hosting/capabilities, the way Collabora publishes it.
             extra.append(f'<app name="Capabilities"><action name="getinfo" ext="" default="true" urlsrc="{PUBLIC}/hosting/capabilities"/></app>')
+            # PPTX: SumSlide names its app by MIME type with a plain urlsrc — the way Nextcloud Office looks it up.
+            if SLIDES:
+                extra += re.findall(r'<app name="application/vnd\.openxmlformats-officedocument\.presentationml\.presentation">.*?</app>', fetch(SLIDES + "/slides/hosting/discovery"), re.S)
             proof = re.search(r"<proof-key[^>]*/>|<proof-key.*?</proof-key>", a, re.S)
             body = '<?xml version="1.0" encoding="UTF-8"?><wopi-discovery><net-zone name="external-http">' + "".join(apps) + "".join(extra) + "</net-zone>" + sharepoint_zone(a, f) + (proof.group(0) if proof else "") + "</wopi-discovery>"
             data = body.encode(); self.send_response(200); self.send_header("Content-Type","text/xml; charset=utf-8"); self.send_header("Content-Length", str(len(data))); self.end_headers(); self.wfile.write(data); return

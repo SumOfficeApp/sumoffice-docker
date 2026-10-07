@@ -43,16 +43,16 @@ export SUMOFFICE_WOPI_PROOF_DIR="$DATA/proof"
 
 cd /app/code/sumsheet
 node apps/desktop-shell/webhost/cabin-manager.mjs --docs-dir "$DATA/sumsheet" --template /app/code/sumsheet/blank.xlsx --port 8095 \
-  --base-path /f1 --max-cabins "$MAX_CABINS" --idle-min 15 \
+  --base-path /sheets --max-cabins "$MAX_CABINS" --idle-min 15 \
   --auth-url http://127.0.0.1:8092/v1/me --attach-url 'http://127.0.0.1:8092/v1/attachments/{id}/content' &
 sleep 3
 node apps/desktop-shell/webhost/wopi-facade.mjs --port 8092 --manager http://127.0.0.1:8095 \
-  --public-url "$PUBLIC_URL/f1" --state-dir "$DATA/wopi" --idle-min 30 --wopi-allow "$NEXTCLOUD_HOST" &
+  --public-url "$PUBLIC_URL/sheets" --state-dir "$DATA/wopi" --idle-min 30 --wopi-allow "$NEXTCLOUD_HOST" &
 
 cd /app/code/sumdoc
 FASTDOC_CLI_BIN=/app/code/sumdoc/release/runtime/native/fastdoc-cli \
 node apps/fastdoc-shell/webhost/cabin-manager.mjs --docs-dir "$DATA/sumdoc" --template /app/code/sumdoc/blank.docx --port 8090 \
-  --base-path /a4 --max-cabins "$MAX_CABINS" --idle-min 15 --wopi-hosts "$NEXTCLOUD_URL" --public-url "$PUBLIC_URL/a4" &
+  --base-path /docs --max-cabins "$MAX_CABINS" --idle-min 15 --wopi-hosts "$NEXTCLOUD_URL" --public-url "$PUBLIC_URL/docs" &
 
 node /app/code/front.mjs &
 # If any part dies, the app dies: Cloudron restarts it whole.

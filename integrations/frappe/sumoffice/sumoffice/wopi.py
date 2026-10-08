@@ -27,7 +27,7 @@ from werkzeug.wrappers import Response
 
 from frappe.website.page_renderers.base_renderer import BaseRenderer
 
-EXTENSIONS = ("xlsx", "xlsm", "xlsb", "docx")
+EXTENSIONS = ("xlsx", "xlsm", "xlsb", "docx", "pptx")
 TOKEN_TTL = 10 * 3600
 LOCK_TTL = 30 * 60          # MS-WOPI: 30 minutes
 PROOF_WINDOW = 20 * 60      # MS-WOPI: 20 minutes of clock skew
@@ -65,6 +65,25 @@ def read_token(token, file_name):
     if payload.get("f") != file_name or payload.get("e", 0) < time.time():
         return None
     return payload
+
+
+def ignore_bearer_on_wopi_routes():
+    """Drop `Authorization: Bearer` on the WOPI routes — it is the editor's own access token.
+
+    Measured on this stand (2026-10-08, Frappe 15.95 + SumSheet): the editor sends the access token
+    twice — in the query string and as `Authorization: Bearer`, because SharePoint Server SE answers
+    401 without the header. Frappe reads any `Bearer` as an OAuth token of its own, fails to find it
+    and answers its own 401 HTML page *before* `validate_auth` ever reaches this renderer: the file
+    opened to "WOPI host did not confirm access to the file (401)" while the same token in the query
+    string alone was accepted. On these two routes the query token is the authority (it is checked
+    in `read_token`, together with the proof keys), so the header is simply not ours to read.
+    """
+    request = getattr(frappe.local, "request", None)
+    if request is None or not request.headers.get("Authorization"):
+        return
+    if not ROUTE.match((request.path or "").lstrip("/")):
+        return
+    request.environ.pop("HTTP_AUTHORIZATION", None)
 
 
 def _conf(key, default=None):

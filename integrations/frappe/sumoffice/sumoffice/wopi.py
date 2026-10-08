@@ -18,7 +18,7 @@ import re
 import struct
 import time
 from html import escape
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 from xml.etree import ElementTree
 
 import frappe
@@ -89,6 +89,28 @@ def discovery():
     info = {"url": url, "at": time.time(), "actions": actions, "proof": dict(proof.attrib) if proof is not None else None}
     frappe.cache().set_value("sumoffice_discovery", info)
     return info
+
+
+def auth_hook():
+    """Frappe auth hook: a WOPI call carrying our token in "Authorization: Bearer".
+
+    Frappe raises AuthenticationError for any two-part Authorization header that no
+    login method accepted. WOPI clients send the same access token there as in the
+    query string, so for /wopi/files/<file> we verify it exactly like the query token
+    and act as its user. Anything else is left to Frappe untouched.
+    """
+    request = getattr(frappe.local, "request", None)
+    if request is None:
+        return
+    match = re.match(r"^/wopi/files/([^/]+)", request.path or "")
+    if not match:
+        return
+    kind, _, token = frappe.get_request_header("Authorization", "").partition(" ")
+    if kind.lower() != "bearer" or not token:
+        return
+    payload = read_token(token.strip(), unquote(match.group(1)))
+    if payload:
+        frappe.set_user(payload["u"])
 
 
 def _rsa(modulus, exponent):

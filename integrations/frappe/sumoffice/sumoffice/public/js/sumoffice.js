@@ -1,6 +1,6 @@
-// "SumOffice" next to .xlsx/.xlsm/.xlsb/.docx attachments in the form sidebar.
+// "SumOffice" next to .xlsx/.xlsm/.xlsb/.docx/.pptx attachments in the form sidebar.
 (function () {
-    const EXTENSIONS = ["xlsx", "xlsm", "xlsb", "docx"];
+    const EXTENSIONS = ["xlsx", "xlsm", "xlsb", "docx", "pptx"];
     function decorate(frm) {
         const docs = frm?.get_docinfo?.()?.attachments || [];
         const wrapper = frm?.sidebar?.frm?.page?.sidebar || $(document.body);

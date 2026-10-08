@@ -66,10 +66,21 @@ The package build does not replace this live round.
 
 ## Checked on
 
-EspoCRM 9.2.4 + SumOffice stack, 25.09.2026:
+EspoCRM 9.2.4 + SumOffice stack, 08.10.2026 — round on healthy files
+(`integrations/PROTOCOL-2026-10-08-healthy-file.md`):
 
-- `approved_macro_demo.xlsm`: the button appears on the Document, the file opens in SumSheet, a cell is edited, **Ctrl+S**. The EspoCRM file gets the new contents; `vbaProject.bin` is byte-identical to the original.
-- `images.docx`: edited in SumDoc and saved; all five images are byte-identical.
-- PPTX support is packaged in 1.0.2 but has not yet been through a live EspoCRM round.
+- `vba-web-blank.xlsm` (macro-enabled, unprotected): Document created, **Open in SumOffice**,
+  a cell edited, **Ctrl+S**. The EspoCRM file gets the new contents (238 552 → 224 565 B), the
+  marker is in the sheet, and `xl/vbaProject.bin` is byte-identical (`721985bb…`). Excel opens the
+  returned file without repair.
+- `word-open-control-sheet.docx`: edited in SumDoc and saved; Word opens it without repair.
+- `document-identity.powerpoint-mac.pptx`: a text box added in SumSlide and saved; PowerPoint
+  opens it without repair. This closes the "PPTX has not yet been through a live EspoCRM round"
+  gap of 1.0.2.
 - WOPI calls: CheckFileInfo, Lock, GetFile, PutFile — all `200` with proof verification on.
-- Refusals: no proof → `500`, forged proof → `500`, a token for another attachment → `401`, a broken token → `401`.
+- Refusals, measured 25.09 and not re-measured on 08.10: no proof → `500`, forged proof → `500`,
+  a token for another attachment → `401`, a broken token → `401`.
+
+The 25.09 round was driven with `approved_macro_demo.xlsm`, a package without a root `_rels/.rels`
+and without `docProps`: Excel offers to repair it before showing anything, so that round could not
+prove what it claimed. It is not used any more.

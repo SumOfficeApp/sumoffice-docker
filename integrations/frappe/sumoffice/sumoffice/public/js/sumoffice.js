@@ -8,11 +8,14 @@
             const ext = (a.file_name || a.file_url || "").split(".").pop().toLowerCase();
             if (!EXTENSIONS.includes(ext)) return;
             const row = wrapper.find(`.attachment-row a[href="${a.file_url}"]`).closest(".attachment-row");
-            if (!row.length || row.find(".sumoffice-open").length) return;
-            $(`<a class="sumoffice-open text-muted small" style="margin-left:6px" target="_blank">SumOffice</a>`)
+            if (!row.length || row.next(".sumoffice-row").length) return;
+            // Its own line under the file: inside the row the link sat in the ellipsis box of the
+            // file name and Frappe 15 clipped it out of sight together with the name's tail.
+            const link = $(`<a class="sumoffice-open small" target="_blank"></a>`)
+                .text(__("Open in SumOffice"))
                 .attr("href", `/sumoffice/open/${encodeURIComponent(a.name)}`)
-                .attr("title", __("Open in SumOffice"))
-                .appendTo(row.find(".flex, .ellipsis").first().length ? row.find(".flex, .ellipsis").first() : row);
+                .attr("title", a.file_name || "");
+            $(`<div class="sumoffice-row" style="padding:2px 0 6px 22px"></div>`).append(link).insertAfter(row);
         });
     }
     $(document).on("form-refresh", (_e, frm) => setTimeout(() => decorate(frm), 300));

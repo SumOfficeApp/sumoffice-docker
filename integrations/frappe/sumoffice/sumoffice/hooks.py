@@ -10,3 +10,8 @@ page_renderer = ["sumoffice.wopi.WopiRenderer"]
 
 # "SumOffice" link next to office attachments in the form sidebar
 app_include_js = "/assets/sumoffice/js/sumoffice.js"
+
+# WOPI clients (SumSheet among them) also send the access token as "Authorization: Bearer".
+# Frappe treats any two-part Authorization header as its own API login and answers 401
+# before the page renderer runs; this hook accepts our WOPI token there instead.
+auth_hooks = ["sumoffice.wopi.auth_hook"]

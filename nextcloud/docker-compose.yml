@@ -9,7 +9,7 @@
 name: sumoffice-nextcloud
 services:
   sumsheet:
-    image: hissih/sumsheet-webhost:2026.10.01-amd64@sha256:5874968f0c3cb576fa1870a32ffb47d99e1cd1d1b298a31b19814e4cb5639d9e
+    image: hissih/sumsheet-webhost:2026.10.19-amd64@sha256:11a8d60556e78490fe3087d893d4746e786c55c552f6fa15c6035167c102cba0
     platform: linux/amd64
     restart: unless-stopped
     volumes: ["sumsheet-cabins:/data/cabins", "sumsheet-wopi:/data/wopi", "./proof-key.pem:/data/wopi/proof-key.pem:ro", "./start-sumsheet.sh:/start.sh:ro"]

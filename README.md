@@ -9,7 +9,7 @@ pinned to one:
 
 | image | pinned tag | built from |
 |---|---|---|
-| `sumsheet-webhost` | `2026.10.01-amd64` (`sha256:5874968f…`) | released 1 October |
+| `sumsheet-webhost` | `2026.10.19-amd64` (`sha256:11a8d605…`) | released 19 October (`bea7a166c`): a web guest can no longer read server files; macro dialog fixes |
 | `sumdoc-webhost` | `2026.10.01-amd64` (`sha256:3f7667ee…`) | released 1 October |
 | `sumslide-server` | `2026.10.07-amd64` (`sha256:2d966620…`) | first public release; FastOffices/office-app#1826 |
 | `sumoffice-docsapi` | `2026.09.27-amd64` | unchanged since 27 September |

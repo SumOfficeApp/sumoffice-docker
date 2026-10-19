@@ -1,6 +1,6 @@
 # SumOffice for Cloudron: SumSheet + SumDoc + joint WOPI discovery + one-origin front in one container.
 # Code lives in /app/code (read-only at runtime); all state lives in /app/data (Cloudron localstorage addon).
-ARG SUMSHEET_IMAGE=hissih/sumsheet-webhost:2026.10.01-amd64@sha256:5874968f0c3cb576fa1870a32ffb47d99e1cd1d1b298a31b19814e4cb5639d9e
+ARG SUMSHEET_IMAGE=hissih/sumsheet-webhost:2026.10.19-amd64@sha256:11a8d60556e78490fe3087d893d4746e786c55c552f6fa15c6035167c102cba0
 ARG SUMDOC_IMAGE=hissih/sumdoc-webhost:2026.10.01-amd64@sha256:3f7667ee310173ec11121a512de73cfbae82073f660f760ad103c7d50f3e94cc
 FROM ${SUMSHEET_IMAGE} AS sumsheet
 FROM ${SUMDOC_IMAGE} AS sumdoc

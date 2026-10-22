@@ -44,6 +44,11 @@ def main() -> None:
             version(ROOT / "integrations/odoo/sumoffice_wopi/__manifest__.py", r'"version":\s*"([^"]+)"'),
         ),
         (
+            ROOT / "integrations/odoo19/sumoffice_wopi",
+            "sumoffice-odoo",
+            version(ROOT / "integrations/odoo19/sumoffice_wopi/__manifest__.py", r'"version":\s*"([^"]+)"'),
+        ),
+        (
             ROOT / "integrations/redmine/sumoffice_wopi",
             "sumoffice-redmine",
             version(ROOT / "integrations/redmine/sumoffice_wopi/init.rb", r"version '([^']+)'"),

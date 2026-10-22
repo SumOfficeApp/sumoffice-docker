@@ -34,7 +34,7 @@ from odoo.http import request
 
 _logger = logging.getLogger(__name__)
 
-EXTENSIONS = ("xlsx", "xlsm", "xlsb", "docx")
+EXTENSIONS = ("xlsx", "xlsm", "xlsb", "docx", "pptx")
 TOKEN_TTL = 10 * 3600          # seconds; the editor refreshes the page long before
 LOCK_TTL = timedelta(minutes=30)  # MS-WOPI: a lock expires after 30 minutes
 PROOF_WINDOW = 20 * 60          # seconds; MS-WOPI allows 20 minutes of clock skew
@@ -162,9 +162,18 @@ def proof_ok(env, token):
 
 # ---- helpers ------------------------------------------------------------------
 
+def _check(attachment, mode):
+    """Odoo 19: ir.attachment.check() is deprecated. Same rule as before: an internal
+    user (or admin) only, then the attachment's own access check for ``mode``."""
+    env = attachment.env
+    if not (env.is_admin() or env.user._is_internal()):
+        raise AccessError("Sorry, you are not allowed to access this document.")
+    attachment.check_access(mode)
+
+
 def _can_write(attachment):
     try:
-        attachment.check("write")
+        _check(attachment, "write")
         return True
     except AccessError:
         return False
@@ -196,7 +205,7 @@ class SumofficeWopi(http.Controller):
         attachment = env["ir.attachment"].browse(attachment_id).exists()
         if not attachment:
             return request.not_found()
-        attachment.check("read")
+        _check(attachment, "read")
         ext = (attachment.name or "").rsplit(".", 1)[-1].lower()
         if ext not in EXTENSIONS:
             return _reply(415, f"SumOffice does not open .{ext} files".encode(), mimetype="text/plain")
@@ -235,7 +244,7 @@ class SumofficeWopi(http.Controller):
         if not attachment:
             return None, _reply(404)
         try:
-            attachment.check("read")
+            _check(attachment, "read")
         except AccessError:
             return None, _reply(401)
         return payload, attachment

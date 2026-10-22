@@ -4,23 +4,33 @@
  * Opens the Document revision in SumOffice for the signed-in person.
  */
 if (!defined('sugarEntry') || !sugarEntry) {
-
-// SuiteCRM Store licence check: the store requires isValid() at a critical code point,
-// and opening a document for editing is exactly that point.
-if (file_exists('modules/SumOffice/license/SumOfficeOutfittersLicense.php')) {
-    require_once 'modules/SumOffice/license/SumOfficeOutfittersLicense.php';
-    // the licence gate, spelled out here as well so it is plain at the entry point
-    if (!SumOfficeOutfittersLicense::isValid('SumOffice')) {
-        header('HTTP/1.1 403 Forbidden');
-        echo 'SumOffice: the add-on licence is not valid. An administrator can enter the licence key in Admin > SumOffice.';
-        return;
-    }
-}
     die('Not A Valid Entry Point');
 }
 require_once 'custom/modules/SumOffice/SumOfficeWopi.php';
+require_once 'modules/SumOffice/SumOfficeLicenseGate.php';
 
 global $current_user;
+
+// SuiteCRM Store licence check: the store requires isValid() at a critical code point,
+// and opening a document for editing is exactly that point (see SumOfficeLicenseGate).
+$licence = SumOfficeLicenseGate::check();
+if ($licence !== true) {
+    $e = function ($s) { return htmlspecialchars((string) $s, ENT_QUOTES); };
+    http_response_code(403);
+    header('Content-Type: text/html; charset=utf-8');
+    echo '<!doctype html><html><head><meta charset="utf-8"><title>SumOffice licence</title></head>'
+        . '<body style="font-family:sans-serif;max-width:40em;margin:3em auto;line-height:1.5">'
+        . '<h1 style="font-size:1.3em">SumOffice cannot open this document</h1>'
+        . '<p>' . $e($licence) . '</p>'
+        . (is_admin($current_user)
+            ? '<p><a href="index.php?module=SumOffice&amp;action=license">Enter or check the licence key</a></p>'
+            : '<p>Please ask your SuiteCRM administrator to check the SumOffice licence key (Admin &gt; SumOffice licence).</p>')
+        . '<p><a href="https://store.suitecrm.com/addons/sumoffice" target="_blank" rel="noopener">SumOffice in the SuiteCRM Store</a></p>'
+        . '</body></html>';
+    sugar_cleanup(true);
+    return;
+}
+
 $revisionId = preg_replace('/[^A-Za-z0-9-]/', '', (string) ($_GET['record'] ?? ''));
 $loaded = $revisionId !== '' ? SumOfficeWopi::load($revisionId) : null;
 if (!$loaded) {

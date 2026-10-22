@@ -11,13 +11,19 @@ services:
   sumsheet:
     image: hissih/sumsheet-webhost:latest
     restart: unless-stopped
-    volumes: ["sumsheet-cabins:/data/cabins", "sumsheet-wopi:/data/wopi", "./start-sumsheet.sh:/start.sh:ro"]
-    environment: { PUBLIC_URL: "${PUBLIC_URL}", NEXTCLOUD_HOST: "${NEXTCLOUD_HOST}" }
+    volumes: ["sumsheet-cabins:/data/cabins", "sumsheet-wopi:/data/wopi", "wopi-proof:/data/proof", "./start-sumsheet.sh:/start.sh:ro"]
+    environment: { PUBLIC_URL: "${PUBLIC_URL}", NEXTCLOUD_HOST: "${NEXTCLOUD_HOST}", SUMOFFICE_WOPI_PROOF_DIR: /data/proof }
     entrypoint: ["sh", "/start.sh"]
   sumdoc:
     image: hissih/sumdoc-webhost:latest
     restart: unless-stopped
-    volumes: ["sumdoc-cabins:/data/cabins"]
+    volumes: ["sumdoc-cabins:/data/cabins", "wopi-proof:/data/proof"]
+    # One signing key for the whole stack: /hosting/discovery carries one <proof-key>,
+    # yet both editors sign their WOPI calls. Both read SUMOFFICE_WOPI_PROOF_DIR; the
+    # first to start creates proof-key.pem there atomically, the other reads it.
+    # With two keys a host that verifies X-WOPI-Proof (Frappe, Odoo, SharePoint,
+    # oCIS) rejects every call of one editor.
+    environment: { SUMOFFICE_WOPI_PROOF_DIR: /data/proof }
     command: ["--base-path", "/a4", "--max-cabins", "8", "--idle-min", "15",
               "--wopi-hosts", "${NEXTCLOUD_URL}", "--public-url", "${PUBLIC_URL}/a4"]
   discovery:
@@ -32,4 +38,4 @@ services:
     ports: ["127.0.0.1:8093:8093"]
     volumes: ["./nginx.conf:/etc/nginx/conf.d/default.conf:ro"]
     depends_on: [sumsheet, sumdoc, discovery]
-volumes: { sumsheet-cabins: {}, sumsheet-wopi: {}, sumdoc-cabins: {} }
+volumes: { sumsheet-cabins: {}, sumsheet-wopi: {}, sumdoc-cabins: {}, wopi-proof: {} }

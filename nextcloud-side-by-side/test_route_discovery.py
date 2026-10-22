@@ -26,6 +26,7 @@ COLLABORA_XML = f'''<?xml version="1.0" encoding="utf-8"?>
   </net-zone>
   <proof-key exponent="AQAB" modulus="MOD" oldexponent="AQAB" oldmodulus="OLDMOD" oldvalue="OLDVAL" value="VAL"/>
 </wopi-discovery>'''
+MACRO = ("application/vnd.ms-excel.sheet.macroEnabled.12", "application/vnd.ms-excel.sheet.binary.macroEnabled.12")
 SHEET_XML = ('<wopi-discovery><net-zone name="external-http"><app name="SumSheet">'
              '<action name="edit" ext="xlsx" default="true" urlsrc="http://office.example.com/sheets/wopi/edit?"/></app>'
              '</net-zone></wopi-discovery>')
@@ -48,20 +49,23 @@ def free_port():
 
 
 def run(collabora_url, sheet_url, **env_extra):
-    port = free_port()
-    env = dict(os.environ, PUBLIC_URL="https://office.example.com", PORT=str(port), COLLABORA_URL=collabora_url, SUMSHEET_URL=sheet_url, **env_extra)
-    p = subprocess.Popen([sys.executable, os.path.join(HERE, "route-discovery.py")], env=env, stderr=subprocess.DEVNULL)
-    try:
-        for _ in range(200):  # a busy machine can take seconds to start Python
-            try:
-                return 200, urllib.request.urlopen(f"http://127.0.0.1:{port}/hosting/discovery", timeout=2).read().decode()
-            except urllib.error.HTTPError as e:
-                return e.code, e.read().decode()
-            except Exception:
-                time.sleep(0.1)
-        raise RuntimeError("route-discovery did not start")
-    finally:
-        p.kill()
+    for attempt in range(3):  # the free port can be taken again before the child binds it
+        port = free_port()
+        env = dict(os.environ, PUBLIC_URL="https://office.example.com", PORT=str(port), COLLABORA_URL=collabora_url, SUMSHEET_URL=sheet_url, **env_extra)
+        p = subprocess.Popen([sys.executable, os.path.join(HERE, "route-discovery.py")], env=env, stderr=subprocess.PIPE)
+        try:
+            deadline = time.time() + 30  # a busy machine can take seconds to start Python
+            while time.time() < deadline and p.poll() is None:
+                try:
+                    return 200, urllib.request.urlopen(f"http://127.0.0.1:{port}/hosting/discovery", timeout=15).read().decode()
+                except urllib.error.HTTPError as e:
+                    return e.code, e.read().decode()
+                except Exception:
+                    time.sleep(0.1)
+        finally:
+            p.kill()
+            err = p.communicate()[1].decode(errors="replace")
+    raise RuntimeError("route-discovery did not start: " + err[-500:])
 
 
 def urlsrc_by_mime(xml, mime):
@@ -76,7 +80,8 @@ class RoutedDiscovery(unittest.TestCase):
     def setUpClass(cls):
         cls.hosts = []
         cls.cool, cls.sheet = fake(COLLABORA_XML, cls.hosts), fake(SHEET_XML)
-        cls.code, cls.xml = run(f"http://127.0.0.1:{cls.cool.server_port}", f"http://127.0.0.1:{cls.sheet.server_port}", COLLABORA_HOST="office.example.com")
+        cls.code, cls.xml = run(f"http://127.0.0.1:{cls.cool.server_port}", f"http://127.0.0.1:{cls.sheet.server_port}", COLLABORA_HOST="office.example.com",
+                                ROUTE_EXTS="xlsm,xlsb", ROUTE_MIMES=",".join(MACRO))
 
     @classmethod
     def tearDownClass(cls):
@@ -88,6 +93,7 @@ class RoutedDiscovery(unittest.TestCase):
             self.assertEqual(urlsrc_by_mime(self.xml, mime), "https://office.example.com/sheets/wopi/edit?", mime)
 
     def test_xlsb_is_added_when_collabora_lacks_it(self):
+        # Collabora CODE 26.04 lists .xlsb; older or trimmed discoveries may not.
         app = [a for a in ET.fromstring(self.xml).iter("app") if a.get("name") == "application/vnd.ms-excel.sheet.binary.macroEnabled.12"]
         self.assertEqual(len(app), 1)
         self.assertEqual({x.get("name") for x in app[0]}, {"edit", "view"})
@@ -138,15 +144,49 @@ class Failures(unittest.TestCase):
         self.assertEqual(code, 200)
         self.assertEqual(urlsrc_by_mime(xml, "application/vnd.ms-excel.sheet.macroEnabled.12"), "https://office.example.com/sheets/wopi/edit?")
 
-    def test_route_set_is_configurable(self):
-        cool, sheet = fake(COLLABORA_XML), fake(SHEET_XML)
+    def test_default_routes_xlsm_only(self):
+        # .xlsb stays with Collabora by default: SumSheet cannot save it yet.
+        xlsb = COLLABORA_XML.replace("</net-zone>", '<app name="application/vnd.ms-excel.sheet.binary.macroEnabled.12"><action default="true" ext="" name="view" urlsrc="%s"/></app></net-zone>' % COOL)
+        cool, sheet = fake(xlsb), fake(SHEET_XML)
         try:
-            code, xml = run(f"http://127.0.0.1:{cool.server_port}", f"http://127.0.0.1:{sheet.server_port}",
-                            ROUTE_MIMES="application/vnd.ms-excel.sheet.macroEnabled.12", ROUTE_EXTS="xlsm")
+            code, xml = run(f"http://127.0.0.1:{cool.server_port}", f"http://127.0.0.1:{sheet.server_port}")
         finally:
             cool.shutdown(); sheet.shutdown()
-        self.assertEqual(urlsrc_by_mime(xml, "application/vnd.ms-excel.sheet.macroEnabled.12"), "https://office.example.com/sheets/wopi/edit?")
-        self.assertIsNone(urlsrc_by_mime(xml, "application/vnd.ms-excel.sheet.binary.macroEnabled.12"))
+        self.assertEqual(urlsrc_by_mime(xml, MACRO[0]), "https://office.example.com/sheets/wopi/edit?")
+        self.assertEqual(urlsrc_by_mime(xml, MACRO[1]), "https://office.example.com/browser/0a1b2c3/cool.html?")
+        calc = [a for a in ET.fromstring(xml).iter("app") if a.get("name") == "calc"][0]
+        self.assertEqual({x.get("ext"): x.get("urlsrc") for x in calc}["xlsm"], "https://office.example.com/sheets/wopi/edit?")
+
+    def test_urlsrc_placeholders_kept(self):
+        # SumSheet publishes urlsrc with the WOPI placeholder <ui=UI_LLCC&>; richdocuments copes with it.
+        sheet_xml = SHEET_XML.replace("edit?", "edit?&lt;ui=UI_LLCC&amp;&gt;")
+        cool, sheet = fake(COLLABORA_XML), fake(sheet_xml)
+        try:
+            code, xml = run(f"http://127.0.0.1:{cool.server_port}", f"http://127.0.0.1:{sheet.server_port}")
+        finally:
+            cool.shutdown(); sheet.shutdown()
+        self.assertEqual(urlsrc_by_mime(xml, MACRO[0]), "https://office.example.com/sheets/wopi/edit?<ui=UI_LLCC&>")
+
+
+class RealCollabora(unittest.TestCase):
+    """Discovery of collabora/code 26.04.5.1 (stand p29b, 22.10.2026), served at localhost:18293."""
+    def test_real_discovery_default_route(self):
+        raw = open(os.path.join(HERE, "fixtures", "collabora-code-26.04.5.1-discovery.xml"), encoding="utf-8").read()
+        cool, sheet = fake(raw), fake(SHEET_XML)
+        try:
+            code, xml = run(f"http://127.0.0.1:{cool.server_port}", f"http://127.0.0.1:{sheet.server_port}")
+        finally:
+            cool.shutdown(); sheet.shutdown()
+        self.assertEqual(code, 200)
+        before, after = ET.fromstring(raw), ET.fromstring(xml)
+        self.assertEqual(len(list(before.iter("action"))), len(list(after.iter("action"))), "no action lost or added")
+        sheets = [a for a in after.iter("action") if "/sheets/" in a.get("urlsrc")]
+        self.assertEqual(len(sheets), 4)  # MIME app edit+view, calc ext xlsm edit+view
+        self.assertEqual(urlsrc_by_mime(xml, MACRO[0]), "https://office.example.com/sheets/wopi/edit?")
+        for mime in ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", MACRO[1],
+                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.oasis.opendocument.text"):
+            self.assertTrue(urlsrc_by_mime(xml, mime).startswith("https://office.example.com/browser/"), mime)
+        self.assertEqual(after.find("proof-key").attrib, before.find("proof-key").attrib)
 
 
 if __name__ == "__main__":

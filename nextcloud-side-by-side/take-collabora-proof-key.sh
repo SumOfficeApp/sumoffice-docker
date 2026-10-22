@@ -14,7 +14,16 @@ set -e
 cd "$(dirname "$0")"
 umask 077
 if [ "$1" = "--file" ]; then src=$(cat "${2:?path to Collabora proof_key}")
-else src=$(docker exec "${1:?Collabora container name}" cat /etc/coolwsd/proof_key); fi
-printf '%s\n' "$src" | openssl pkey -out proof-key.pem
+else src=$(docker cp "${1:?Collabora container name}:/etc/coolwsd/proof_key" - 2>/dev/null | tar -xOf - 2>/dev/null || true); fi
+# The collabora/code image has no shell (no `docker exec … cat`) and ships WITHOUT a proof key:
+# then its discovery has no <proof-key>, Nextcloud Office checks no signatures and SumSheet's
+# key is never looked at. SumSheet still needs a key file, so make a private one.
+if [ -z "$src" ]; then
+  echo "Collabora has no proof key: Nextcloud Office will not verify signatures. Using a key of SumSheet's own."
+  echo "If you later give Collabora a key (coolwsd-generate-proof-key), run this script again."
+  openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out proof-key.pem 2>/dev/null
+else
+  printf '%s\n' "$src" | openssl pkey -out proof-key.pem
+  echo "proof-key.pem written: SumSheet signs with Collabora's key"
+fi
 chmod 600 proof-key.pem
-echo "proof-key.pem written: SumSheet signs with Collabora's key"

@@ -1,4 +1,4 @@
-# SumOffice NEXT TO Collabora in Nextcloud Office: .xlsm and .xlsb open in SumSheet,
+# SumOffice NEXT TO Collabora in Nextcloud Office: .xlsm (and .xlsb on request) open in SumSheet,
 # every other format keeps opening in your Collabora — no change to Nextcloud or Collabora.
 #
 #   Nextcloud Office (richdocuments) ──wopi_url──▶ front (this stack)
@@ -8,7 +8,7 @@
 #
 # Before `docker compose up -d`: copy .env.example to .env and run ./take-collabora-proof-key.sh
 # (SumSheet must sign its WOPI calls with Collabora's key — Nextcloud Office checks every call
-# against the one key in discovery). See README.md.
+# against the one key in discovery, when it has one). See README.md.
 name: sumoffice-side-by-side
 services:
   sumsheet:
@@ -27,8 +27,8 @@ services:
       COLLABORA_URL: "${COLLABORA_URL}"
       COLLABORA_HOST: "${COLLABORA_HOST:-}"
       SUMSHEET_URL: "http://sumsheet:8092"
-      ROUTE_EXTS: "${ROUTE_EXTS:-xlsm,xlsb}"
-      ROUTE_MIMES: "${ROUTE_MIMES:-application/vnd.ms-excel.sheet.macroEnabled.12,application/vnd.ms-excel.sheet.binary.macroEnabled.12}"
+      ROUTE_EXTS: "${ROUTE_EXTS:-xlsm}"
+      ROUTE_MIMES: "${ROUTE_MIMES:-application/vnd.ms-excel.sheet.macroEnabled.12}"
     command: ["python3", "/route-discovery.py"]
   front:
     image: nginx:1.27-alpine

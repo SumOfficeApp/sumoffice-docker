@@ -16,6 +16,9 @@ services:
     image: ${COLLABORA_IMAGE:-collabora/code:latest}
     restart: unless-stopped
     cap_add: [MKNOD]
+    # The CODE image ships without a proof key. A production Collabora has one
+    # (coolwsd-generate-proof-key); the stand gives it one to test signature checks.
+    volumes: ["./stand/collabora-proof_key:/etc/coolwsd/proof_key:ro"]
     environment:
       aliasgroup1: "http://nextcloud:80"
       username: ""

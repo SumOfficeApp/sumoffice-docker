@@ -7,6 +7,11 @@ server {
   listen 8093;
   client_max_body_size 200m;
   proxy_http_version 1.1;
+  # All proxy_set_header lines stay at server level: one proxy_set_header inside a location
+  # drops every inherited one, Upgrade/Connection included, and Collabora's WebSocket fails
+  # ("websocketproxyfailure"). The per-location Host goes through $fwd_host instead.
+  set $fwd_host $http_host;
+  proxy_set_header Host $fwd_host;
   proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
   proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
   proxy_set_header Upgrade $http_upgrade;
@@ -18,8 +23,9 @@ server {
   set $route http://route:8093;
   set $sumsheet http://sumsheet:8092;
   set $collabora ${COLLABORA_URL};
-  location = /hosting/discovery { proxy_set_header Host $http_host; proxy_pass $route; }
-  location /sheets/ { proxy_set_header Host $http_host; proxy_pass $sumsheet; }
-  location = /sheets { proxy_set_header Host $http_host; proxy_pass $sumsheet; }
-  location / { proxy_set_header Host ${COLLABORA_HOST_HEADER}; proxy_ssl_server_name on; proxy_pass $collabora; }
+  proxy_ssl_server_name on;
+  location = /hosting/discovery { proxy_pass $route; }
+  location /sheets/ { proxy_pass $sumsheet; }
+  location = /sheets { proxy_pass $sumsheet; }
+  location / { set $fwd_host ${COLLABORA_HOST_HEADER}; proxy_pass $collabora; }
 }

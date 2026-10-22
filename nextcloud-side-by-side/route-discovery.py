@@ -20,9 +20,11 @@ COLLABORA = os.environ.get("COLLABORA_URL", "http://collabora:9980").rstrip("/")
 SUMSHEET = os.environ.get("SUMSHEET_URL", "http://sumsheet:8092").rstrip("/")
 # Host header for Collabora: it builds urlsrc from it when server_name is not set.
 COLLABORA_HOST = os.environ.get("COLLABORA_HOST", "")
-MACRO_MIMES = ("application/vnd.ms-excel.sheet.macroEnabled.12", "application/vnd.ms-excel.sheet.binary.macroEnabled.12")
-ROUTE_MIMES = tuple(m for m in os.environ.get("ROUTE_MIMES", ",".join(MACRO_MIMES)).split(",") if m)
-ROUTE_EXTS = tuple(e for e in os.environ.get("ROUTE_EXTS", "xlsm,xlsb").split(",") if e)
+# Default: .xlsm only. .xlsb opens in SumSheet but the SumSheet images up to 2026.10.20b cannot
+# save it (stand 22.10: "xlsb-save-current-source-only"); Collabora shows .xlsb read-only.
+# Add it with ROUTE_EXTS=xlsm,xlsb and ROUTE_MIMES=…macroEnabled.12,…binary.macroEnabled.12.
+ROUTE_MIMES = tuple(m for m in os.environ.get("ROUTE_MIMES", "application/vnd.ms-excel.sheet.macroEnabled.12").split(",") if m)
+ROUTE_EXTS = tuple(e for e in os.environ.get("ROUTE_EXTS", "xlsm").split(",") if e)
 EXT_OF = {"application/vnd.ms-excel.sheet.macroEnabled.12": "xlsm", "application/vnd.ms-excel.sheet.binary.macroEnabled.12": "xlsb"}
 
 

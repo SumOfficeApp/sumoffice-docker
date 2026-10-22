@@ -37,9 +37,15 @@ class Locks implements Action
         if ($op === 'LOCK') {
             $old = $request->getHeader('X-WOPI-OldLock');
             if ($lock !== null && $lock !== $sent && $lock !== $old) {
-                return $response->setStatus(409)->setHeader('X-WOPI-Lock', $lock);
+                // The same person reopening the file (a closed tab, a reload) gets a new editor session
+                // with a new lock id while the old lock still has up to 30 minutes to run. Refusing it
+                // leaves them in an editor that cannot save. Another person's lock is still refused.
+                if ($this->wopi->lockOwner($id) !== $user->getId()) {
+                    return $response->setStatus(409)->setHeader('X-WOPI-Lock', $lock);
+                }
+                $GLOBALS['log']->info("SumOffice: lock on attachment $id taken over by the same user's new session");
             }
-            $this->wopi->setLock($id, $sent);
+            $this->wopi->setLock($id, $sent, $user->getId());
 
             return $response;
         }

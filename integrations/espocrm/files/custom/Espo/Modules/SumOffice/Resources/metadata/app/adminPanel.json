@@ -1,0 +1,14 @@
+{
+    "sumOffice": {
+        "label": "SumOffice",
+        "itemList": [
+            {
+                "url": "#Admin/sumOffice",
+                "label": "SumOffice",
+                "iconClass": "fas fa-file-excel",
+                "description": "sumOffice",
+                "recordView": "sum-office:views/admin/sumoffice"
+            }
+        ]
+    }
+}

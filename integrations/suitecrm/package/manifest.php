@@ -2,11 +2,11 @@
 $manifest = [
     'name' => 'SumOffice for SuiteCRM',
     'description' => 'Open and edit .xlsx, .xlsm, .xlsb and .docx documents in SumOffice (SumSheet, SumDoc) over WOPI. Ctrl+S saves back into the same SuiteCRM document revision.',
-    'version' => '1.0.6',
+    'version' => '1.0.7',
     'author' => 'SumOffice',
     'author_website' => 'https://sumoffice.com',
     'support_email' => 'hello@sumoffice.com',
-    'published_date' => '2026-09-25',
+    'published_date' => '2026-10-22',
     'type' => 'module',
     'is_uninstallable' => true,
     'acceptable_sugar_versions' => ['regex_matches' => ['.*']],
@@ -18,6 +18,10 @@ $installdefs = [
     'copy' => [
         ['from' => '<basepath>/files/custom/modules/SumOffice', 'to' => 'custom/modules/SumOffice'],
         ['from' => '<basepath>/files/modules/SumOffice', 'to' => 'modules/SumOffice'],
+        ['from' => '<basepath>/files/custom/Extension/application/Ext/Include/SumOffice.php', 'to' => 'custom/Extension/application/Ext/Include/SumOffice.php'],
+    ],
+    'administration' => [
+        ['from' => '<basepath>/files/custom/Extension/modules/Administration/Ext/Administration/sumoffice.php'],
     ],
     'entrypoints' => [
         ['from' => '<basepath>/files/custom/Extension/application/Ext/EntryPointRegistry/SumOffice.php', 'to_module' => 'application'],
@@ -26,6 +30,7 @@ $installdefs = [
         ['from' => '<basepath>/files/custom/Extension/modules/Documents/Ext/Vardefs/sumoffice.php', 'to_module' => 'Documents'],
     ],
     'language' => [
+        ['from' => '<basepath>/files/custom/Extension/modules/Administration/Ext/Language/en_us.sumoffice.php', 'to_module' => 'Administration', 'language' => 'en_us'],
         ['from' => '<basepath>/files/custom/Extension/modules/Documents/Ext/Language/en_us.sumoffice.php', 'to_module' => 'Documents', 'language' => 'en_us'],
     ],
     'logic_hooks' => [

@@ -1,4 +1,4 @@
-# SumOffice for Odoo 18
+# SumOffice for Odoo 19
 
 Open the spreadsheets and documents attached in Odoo with the SumOffice editors, and save them back —
 macros, defined names, queries and pictures come back byte for byte.
@@ -13,4 +13,4 @@ signed access tokens whose signature is verified on every request. The editors r
 - Every host we measured: https://sumoffice.com/wopi.html
 - Contact: hello@sumoffice.com
 
-This branch holds the module at its root, as the Odoo Apps store expects for series 18.0.
+This branch holds the module at its root, as the Odoo Apps store expects for series 19.0. Series 18.0 lives in branch `18.0`.

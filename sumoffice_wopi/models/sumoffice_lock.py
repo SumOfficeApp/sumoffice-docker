@@ -11,6 +11,5 @@ class SumofficeLock(models.Model):
     lock_id = fields.Char(required=True)
     expires_at = fields.Datetime(required=True)
 
-    _sql_constraints = [
-        ("attachment_unique", "unique(attachment_id)", "One WOPI lock per attachment."),
-    ]
+    # Odoo 19 dropped _sql_constraints: a list there is ignored with a warning.
+    _attachment_unique = models.Constraint("unique(attachment_id)", "One WOPI lock per attachment.")

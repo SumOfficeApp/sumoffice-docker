@@ -71,6 +71,34 @@ store requirements rather than product decisions, and they are easy to undo by a
   `custom/modules/Documents/metadata/detailviewdefs.php`, which replaced whatever the customer already
   had there. `files/scripts/post_install.php` now backs up the existing file and inserts one row into
   it. That is why the package no longer contains a `detailviewdefs.php` of its own.
-- **Everything installs under `custom/`.** Module Loader rejects a package that writes outside it.
+- **Our own files install under `custom/`**, except `modules/SumOffice/` (the licence library and
+  its admin page), which is a new folder of our own and overwrites nothing.
 
 Plans in the store are recorded in the channels registry, not here.
+
+## What 1.0.7 changed
+
+1.0.6 carried the licence library but never ran it: the `isValid()` call in `open.php` sat inside the
+"not a valid entry point" branch, and there was no page where an administrator could enter the key.
+1.0.7, 22.10.2026:
+
+- **The check runs.** Opening a document calls `SumOfficeLicenseGate::check()`. Without a valid licence
+  the person gets a page with the store's own reason and a link to the key page (for administrators)
+  or a request to ask the administrator. Open editing sessions are not cut off.
+- **Key page.** Admin > SumOffice licence (`index.php?module=SumOffice&action=license`), the store
+  library's form; `outfitterscontroller.php` validates the key with the store and saves it. After
+  installation the administrator is sent there.
+- **Store unreachable.** The store is asked once a day. If it does not answer, documents keep opening
+  for 7 days after the last successful check; a refusal from the store blocks at once.
+- **Translations** of the licence page (de, es, fr, hu, pt_br) re-encoded from Latin-1 to UTF-8.
+- `post_install.php` uses English identifiers only.
+
+**Not yet checked on a stand.** The checks of the licence task (no key, wrong key, demo key, store
+blocked, key revoked mid-edit, clean install) have to pass on SuiteCRM 8.9.1 before 1.0.7 is uploaded
+to the store.
+
+## Licence key
+
+Buy or start the trial in the SuiteCRM Store; the key is under Account > Purchases. Enter it in
+Admin > SumOffice licence and press Validate. If the server cannot reach `store.suitecrm.com`, the
+add-on keeps working for 7 days after the last successful check.

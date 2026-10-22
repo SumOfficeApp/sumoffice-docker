@@ -7,6 +7,6 @@ $outfitters_config = array(
     'api_url' => 'https://store.suitecrm.com/api/v1',
     'validate_users' => false,
     'manage_licensed_users' => false,
-    'validation_frequency' => 'weekly',
+    'validation_frequency' => 'daily',
     'continue_url' => 'index.php?module=Documents&action=index',
 );

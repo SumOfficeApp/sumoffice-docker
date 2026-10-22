@@ -1,0 +1,4 @@
+proof-key.pem
+.env
+stand/nc-admin.env
+stand/collabora-proof_key

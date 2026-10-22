@@ -6,6 +6,8 @@
  * detail view is exactly such a file: a customer who touched it in Studio has their own
  * custom/modules/Documents/metadata/detailviewdefs.php. So we do not ship that file.
  * Instead we read whichever version is in force, back it up, and insert our one row.
+ *
+ * Then the administrator is sent to the licence key page, as the SuiteCRM Store asks.
  */
 if (!defined('sugarEntry')) define('sugarEntry', true);
 
@@ -14,39 +16,43 @@ function sumoffice_detailviewdefs_path()
     return 'custom/modules/Documents/metadata/detailviewdefs.php';
 }
 
-function post_install()
+function sumoffice_add_detailview_row()
 {
-    $наш = sumoffice_detailviewdefs_path();
-    $истоки = [$наш, 'modules/Documents/metadata/detailviewdefs.php'];
-    $источник = null;
-    foreach ($истоки as $и) {
-        if (file_exists($и)) { $источник = $и; break; }
+    $ours = sumoffice_detailviewdefs_path();
+    $source = null;
+    foreach ([$ours, 'modules/Documents/metadata/detailviewdefs.php'] as $candidate) {
+        if (file_exists($candidate)) { $source = $candidate; break; }
     }
-    if ($источник === null) return;            // нечего дополнять — поле добавят в Studio
+    if ($source === null) return;               // nothing to extend: add the field in Studio
 
     $viewdefs = [];
-    include $источник;
+    include $source;
     if (empty($viewdefs['Documents']['DetailView']['panels'])) return;
 
-    // уже дополнено — ничего не делаем
-    $как_текст = var_export($viewdefs, true);
-    if (strpos($как_текст, 'sumoffice_link') !== false) return;
+    // already extended: leave it alone
+    if (strpos(var_export($viewdefs, true), 'sumoffice_link') !== false) return;
 
-    $панели =& $viewdefs['Documents']['DetailView']['panels'];
-    $имя_панели = array_key_first($панели);
-    $панели[$имя_панели][] = [
+    $panels =& $viewdefs['Documents']['DetailView']['panels'];
+    $firstPanel = array_key_first($panels);
+    $panels[$firstPanel][] = [
         ['name' => 'sumoffice_link', 'label' => 'LBL_SUMOFFICE_LINK'],
         '',
     ];
 
-    if (file_exists($наш)) {
-        @copy($наш, $наш . '.sumoffice-backup-' . date('Ymd-His'));
+    if (file_exists($ours)) {
+        @copy($ours, $ours . '.sumoffice-backup-' . date('Ymd-His'));
     }
-    if (!is_dir(dirname($наш))) @mkdir(dirname($наш), 0755, true);
-    file_put_contents($наш, "<?php\n\$viewdefs = " . var_export($viewdefs, true) . ";\n");
+    if (!is_dir(dirname($ours))) @mkdir(dirname($ours), 0755, true);
+    file_put_contents($ours, "<?php\n\$viewdefs = " . var_export($viewdefs, true) . ";\n");
 }
 
-function post_uninstall()
+function post_install()
 {
-    // оставляем как есть: снимать своё поле из чужого файла опаснее, чем оставить
+    sumoffice_add_detailview_row();
+
+    $licencePage = 'index.php?module=SumOffice&action=license';
+    echo '<p><b>SumOffice is installed.</b> Next, enter the licence key from your SuiteCRM Store purchase: '
+        . '<a href="' . $licencePage . '" target="_top">SumOffice licence</a> '
+        . '(also in Admin &gt; SumOffice licence).</p>'
+        . '<script>setTimeout(function () { try { window.location.href = "' . $licencePage . '"; } catch (e) {} }, 3000);</script>';
 }

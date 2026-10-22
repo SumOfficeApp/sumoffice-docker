@@ -25,11 +25,11 @@ def fake(body):
     threading.Thread(target=s.serve_forever, daemon=True).start()
     return s
 
-def run(public, port, script=os.path.join(HERE, "discovery.py")):
-    a4, f1 = fake(A4_XML), fake(F1_XML)
+def run(public, port, script=os.path.join(HERE, "discovery.py"), f1_xml=F1_XML, stderr=None):
+    a4, f1 = fake(A4_XML), fake(f1_xml)
     env = dict(os.environ, PUBLIC_URL=public, PORT=str(port),
                SUMDOC_URL=f"http://127.0.0.1:{a4.server_port}", SUMSHEET_URL=f"http://127.0.0.1:{f1.server_port}")
-    p = subprocess.Popen([sys.executable, script], env=env, stderr=subprocess.DEVNULL)
+    p = subprocess.Popen([sys.executable, script], env=env, stderr=stderr or subprocess.DEVNULL)
     try:
         for _ in range(50):
             try: return urllib.request.urlopen(f"http://127.0.0.1:{port}/hosting/discovery", timeout=2).read().decode()
@@ -76,3 +76,17 @@ class JointDiscovery(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class OneProofKey(unittest.TestCase):
+    def test_compose_gives_both_editors_one_key_dir(self):
+        text = open(os.path.join(HERE, "docker-compose.yml")).read()
+        self.assertEqual(text.count("SUMOFFICE_WOPI_PROOF_DIR: /data/proof"), 2)
+        self.assertEqual(text.count("wopi-proof:/data/proof"), 2)
+
+    def test_different_keys_are_reported(self):
+        import tempfile
+        with tempfile.TemporaryFile() as err:
+            run("http://localhost:8093", 18934, f1_xml=F1_XML.replace('modulus="MMM"', 'modulus="OTHER"'), stderr=err)
+            err.seek(0)
+            self.assertIn(b"different proof keys", err.read())

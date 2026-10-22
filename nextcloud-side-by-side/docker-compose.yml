@@ -1,0 +1,46 @@
+# SumOffice NEXT TO Collabora in Nextcloud Office: .xlsm and .xlsb open in SumSheet,
+# every other format keeps opening in your Collabora — no change to Nextcloud or Collabora.
+#
+#   Nextcloud Office (richdocuments) ──wopi_url──▶ front (this stack)
+#        /hosting/discovery  → route: Collabora's discovery, macro workbooks → SumSheet
+#        /sheets/…           → SumSheet
+#        everything else     → your Collabora, proxied unchanged
+#
+# Before `docker compose up -d`: copy .env.example to .env and run ./take-collabora-proof-key.sh
+# (SumSheet must sign its WOPI calls with Collabora's key — Nextcloud Office checks every call
+# against the one key in discovery). See README.md.
+name: sumoffice-side-by-side
+services:
+  sumsheet:
+    image: hissih/sumsheet-webhost:2026.10.19-amd64@sha256:11a8d60556e78490fe3087d893d4746e786c55c552f6fa15c6035167c102cba0
+    platform: linux/amd64
+    restart: unless-stopped
+    volumes: ["sumsheet-cabins:/data/cabins", "sumsheet-wopi:/data/wopi", "./proof-key.pem:/data/wopi/proof-key.pem:ro", "../nextcloud/start-sumsheet.sh:/start.sh:ro"]
+    environment: { PUBLIC_URL: "${PUBLIC_URL}", NEXTCLOUD_HOST: "${NEXTCLOUD_HOST}" }
+    entrypoint: ["sh", "/start.sh"]
+  route:
+    image: python:3.12-alpine
+    restart: unless-stopped
+    volumes: ["./route-discovery.py:/route-discovery.py:ro"]
+    environment:
+      PUBLIC_URL: "${PUBLIC_URL}"
+      COLLABORA_URL: "${COLLABORA_URL}"
+      COLLABORA_HOST: "${COLLABORA_HOST:-}"
+      SUMSHEET_URL: "http://sumsheet:8092"
+      ROUTE_EXTS: "${ROUTE_EXTS:-xlsm,xlsb}"
+      ROUTE_MIMES: "${ROUTE_MIMES:-application/vnd.ms-excel.sheet.macroEnabled.12,application/vnd.ms-excel.sheet.binary.macroEnabled.12}"
+    command: ["python3", "/route-discovery.py"]
+  front:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports: ["${FRONT_BIND:-127.0.0.1:8093}:8093"]
+    volumes: ["./nginx.conf.template:/etc/nginx/templates/default.conf.template:ro"]
+    environment:
+      COLLABORA_URL: "${COLLABORA_URL}"
+      # Host header Collabora sees. $http_host (the front's own name) when COLLABORA_URL is
+      # Collabora itself; Collabora's public hostname when COLLABORA_URL goes through its
+      # own reverse proxy (that proxy picks the virtual host by this header).
+      COLLABORA_HOST_HEADER: "${COLLABORA_HOST_HEADER:-$$http_host}"
+      RESOLVER: "${RESOLVER:-127.0.0.11}"
+    depends_on: [sumsheet, route]
+volumes: { sumsheet-cabins: {}, sumsheet-wopi: {} }

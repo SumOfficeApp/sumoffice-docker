@@ -1,0 +1,25 @@
+# Demo stand: a Nextcloud with Nextcloud Office and Collabora CODE, plus the side-by-side stack.
+# Everything on 127.0.0.1. Nextcloud http://localhost:18280, editors http://localhost:18293.
+#   docker compose -p p29b --env-file stand/stand.env -f docker-compose.yml -f stand/compose.stand.yml up -d
+# See stand/up.sh for the full sequence (proof key, occ settings).
+services:
+  nextcloud:
+    image: nextcloud:32-apache
+    restart: unless-stopped
+    ports: ["127.0.0.1:18280:80"]
+    env_file: [stand/nc-admin.env]
+    environment:
+      SQLITE_DATABASE: nextcloud
+      NEXTCLOUD_TRUSTED_DOMAINS: "localhost nextcloud"
+    volumes: ["nextcloud:/var/www/html"]
+  collabora:
+    image: ${COLLABORA_IMAGE:-collabora/code:latest}
+    restart: unless-stopped
+    cap_add: [MKNOD]
+    environment:
+      aliasgroup1: "http://nextcloud:80"
+      username: ""
+      extra_params: "--o:ssl.enable=false --o:ssl.termination=false --o:net.frame_ancestors=localhost:18280 --o:welcome.enable=false --o:home_mode.enable=true"
+  front:
+    ports: !override ["127.0.0.1:18293:8093"]
+volumes: { nextcloud: {} }

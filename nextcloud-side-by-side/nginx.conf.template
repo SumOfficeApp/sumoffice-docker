@@ -1,0 +1,25 @@
+# SumOffice next to Collabora — one origin for both editors (Nextcloud's CSP allows exactly
+# one, public_wopi_url). Point Nextcloud Office's wopi_url / public_wopi_url here.
+#   /hosting/discovery   → route-discovery (Collabora's discovery, .xlsm/.xlsb → SumSheet)
+#   /sheets/             → SumSheet
+#   everything else      → Collabora, unchanged: /browser, /cool (WebSocket), /hosting/capabilities, …
+server {
+  listen 8093;
+  client_max_body_size 200m;
+  proxy_http_version 1.1;
+  proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header Upgrade $http_upgrade;
+  proxy_set_header Connection $http_connection;
+  proxy_read_timeout 3600s;
+  proxy_buffering off;
+  # Look names up again on every request: after an editor restart its address changes.
+  resolver ${RESOLVER} valid=10s ipv6=off;
+  set $route http://route:8093;
+  set $sumsheet http://sumsheet:8092;
+  set $collabora ${COLLABORA_URL};
+  location = /hosting/discovery { proxy_set_header Host $http_host; proxy_pass $route; }
+  location /sheets/ { proxy_set_header Host $http_host; proxy_pass $sumsheet; }
+  location = /sheets { proxy_set_header Host $http_host; proxy_pass $sumsheet; }
+  location / { proxy_set_header Host ${COLLABORA_HOST_HEADER}; proxy_ssl_server_name on; proxy_pass $collabora; }
+}

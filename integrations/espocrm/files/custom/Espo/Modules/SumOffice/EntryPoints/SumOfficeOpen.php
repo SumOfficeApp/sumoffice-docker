@@ -46,7 +46,9 @@ class SumOfficeOpen implements EntryPoint
         }
         $discovery = $this->wopi->discovery();
         if (!$discovery) {
-            throw new Error('SumOffice is not configured: set sumofficeDiscoveryUrl.');
+            throw new Error($this->config->get('sumofficeDiscoveryUrl')
+                ? 'SumOffice editors are not reachable. An administrator can press Check connection in Administration → SumOffice.'
+                : 'SumOffice is not set up yet. An administrator sets the editor address in Administration → SumOffice.');
         }
         $canWrite = $this->wopi->canWrite($this->user, $attachment);
         $action = $discovery['actions']["$ext|" . ($canWrite ? 'edit' : 'view')] ?? $discovery['actions']["$ext|edit"] ?? null;
@@ -55,12 +57,14 @@ class SumOfficeOpen implements EntryPoint
         }
         $site = rtrim((string) $this->config->get('siteUrl'), '/');
         $wopiSrc = "$site/api/v1/SumOffice/wopi/files/" . $attachment->getId();
+        $action = $this->wopi->actionUrl($action, $this->wopi->language($this->user));
         $sep = str_ends_with($action, '?') || str_ends_with($action, '&') ? '' : (str_contains($action, '?') ? '&' : '?');
         $target = $action . $sep . 'WOPISrc=' . rawurlencode($wopiSrc);
         [$token, $expires] = $this->wopi->makeToken($this->user->getId(), $attachment->getId(), $canWrite);
         $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES);
         $response->setHeader('Content-Type', 'text/html; charset=utf-8');
         $response->writeBody('<!doctype html><html><head><meta charset="utf-8"><title>' . $h((string) $attachment->getName()) . '</title>'
+            . '<link rel="icon" href="client/img/favicon.ico">'
             . '<style>html,body{margin:0;height:100%;overflow:hidden}iframe{border:0;width:100%;height:100%;display:block}</style></head><body>'
             . '<form id="sumoffice" action="' . $h($target) . '" method="post" target="sumoffice_frame">'
             . '<input type="hidden" name="access_token" value="' . $h($token) . '">'

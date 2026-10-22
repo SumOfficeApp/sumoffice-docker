@@ -93,16 +93,16 @@ class Wopi
     }
 
     /** @return ?array{actions: array<string, string>, proof: ?array<string, string>} */
-    public function discovery(): ?array
+    public function discovery(bool $fresh = false): ?array
     {
         $url = $this->config->get('sumofficeDiscoveryUrl');
         if (!$url) {
             return null;
         }
         $file = $this->cacheFile('discovery.json');
-        if (is_file($file) && time() - filemtime($file) < self::DISCOVERY_TTL) {
+        if (!$fresh && is_file($file) && time() - filemtime($file) < self::DISCOVERY_TTL) {
             $cached = json_decode((string) file_get_contents($file), true);
-            if (is_array($cached) && ($cached['url'] ?? null) === $url) {
+            if (is_array($cached) && ($cached['url'] ?? null) === $url && ($cached['format'] ?? 1) === 2) {
                 return $cached;
             }
         }
@@ -125,8 +125,8 @@ class Wopi
             $name = (string) $action['name'];
             $src = (string) $action['urlsrc'];
             if ($ext && $name && $src && !isset($actions["$ext|$name"])) {
-                // Placeholders like <ui=UI_LLCC&> are optional; drop them.
-                $actions["$ext|$name"] = preg_replace('/<[^>]*>/', '', $src);
+                // Placeholders such as <ui=UI_LLCC&> are filled in when the file is opened (actionUrl).
+                $actions["$ext|$name"] = $src;
             }
         }
         $proof = null;
@@ -137,10 +137,62 @@ class Wopi
                 $proof[(string) $k] = (string) $v;
             }
         }
-        $result = ['url' => $url, 'actions' => $actions, 'proof' => $proof];
+        $result = ['url' => $url, 'actions' => $actions, 'proof' => $proof, 'format' => 2];
         @file_put_contents($file, json_encode($result));
 
         return $result;
+    }
+
+    /**
+     * The editor address for one person: the discovery urlsrc with its placeholders resolved.
+     * <ui=UI_LLCC&> becomes the person's language (MS-WOPI); other placeholders are optional and dropped.
+     * Editors that publish no placeholder still get the language as ui= and lang=, so the editor
+     * speaks the person's language instead of its build default.
+     */
+    public function actionUrl(string $src, string $language): string
+    {
+        $llcc = str_replace('_', '-', $language ?: 'en_US');
+        $ll = strtolower(explode('-', $llcc)[0]);
+        $hadUi = (bool) preg_match('/<ui=[^>]*>/i', $src);
+        $url = preg_replace('/<ui=[^>]*>/i', 'ui=' . rawurlencode($llcc) . '&', $src);
+        $url = preg_replace('/<[^>]*>/', '', $url);
+        if (!$hadUi && !preg_match('/[?&](ui|lang|ui-lang)=/', $url)) {
+            $url .= (str_contains($url, '?') ? (str_ends_with($url, '?') || str_ends_with($url, '&') ? '' : '&') : '?')
+                . 'ui=' . rawurlencode($llcc) . '&lang=' . rawurlencode($ll) . '&';
+        }
+
+        return $url;
+    }
+
+    /** The person's interface language: their preference, else the system default. */
+    public function language(User $user): string
+    {
+        $preferences = $this->entityManager->getEntityById('Preferences', $user->getId());
+        $language = $preferences ? (string) $preferences->get('language') : '';
+
+        return $language !== '' ? $language : (string) $this->config->get('language', 'en_US');
+    }
+
+    /**
+     * After a save, the Document (or other record) that owns the file shows who saved it and when,
+     * so people see the new version in EspoCRM without downloading the file.
+     */
+    public function touchParent(Attachment $attachment, User $user): void
+    {
+        $parentType = $attachment->get('parentType') ?: $attachment->get('relatedType');
+        $parentId = $attachment->get('parentId') ?: $attachment->get('relatedId');
+        if (!$parentType || !$parentId) {
+            return;
+        }
+        $parent = $this->entityManager->getEntityById($parentType, $parentId);
+        if (!$parent) {
+            return;
+        }
+        try {
+            $this->entityManager->saveEntity($parent, ['modifiedById' => $user->getId(), 'skipHooks' => true]);
+        } catch (\Throwable $e) {
+            $GLOBALS['log']->warning('SumOffice: could not mark ' . $parentType . ' ' . $parentId . ' as modified: ' . $e->getMessage());
+        }
     }
 
     private function derLength(int $length): string
@@ -278,7 +330,8 @@ class Wopi
 
     // ---- locks (one small JSON file per attachment) ------------------------------
 
-    public function lock(string $attachmentId): ?string
+    /** @return ?array{id: string, user: ?string, until: int} */
+    private function lockRecord(string $attachmentId): ?array
     {
         $file = $this->cacheFile('lock-' . preg_replace('/[^A-Za-z0-9]/', '', $attachmentId) . '.json');
         if (!is_file($file)) {
@@ -291,10 +344,21 @@ class Wopi
             return null;
         }
 
-        return (string) $lock['id'];
+        return ['id' => (string) $lock['id'], 'user' => $lock['user'] ?? null, 'until' => (int) $lock['until']];
     }
 
-    public function setLock(string $attachmentId, ?string $lockId): void
+    public function lock(string $attachmentId): ?string
+    {
+        return $this->lockRecord($attachmentId)['id'] ?? null;
+    }
+
+    /** Who took the current lock (user id), when the lock was written by 1.0.3 or later. */
+    public function lockOwner(string $attachmentId): ?string
+    {
+        return $this->lockRecord($attachmentId)['user'] ?? null;
+    }
+
+    public function setLock(string $attachmentId, ?string $lockId, ?string $userId = null): void
     {
         $file = $this->cacheFile('lock-' . preg_replace('/[^A-Za-z0-9]/', '', $attachmentId) . '.json');
         if ($lockId === null) {
@@ -302,7 +366,10 @@ class Wopi
 
             return;
         }
-        file_put_contents($file, json_encode(['id' => $lockId, 'until' => time() + self::LOCK_TTL]), LOCK_EX);
+        if ($userId === null) {
+            $userId = $this->lockOwner($attachmentId);
+        }
+        file_put_contents($file, json_encode(['id' => $lockId, 'user' => $userId, 'until' => time() + self::LOCK_TTL]), LOCK_EX);
     }
 
     public function write(Attachment $attachment, string $contents): void

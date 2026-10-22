@@ -10,12 +10,13 @@ trap 'rm -rf "$stage"' EXIT HUP INT TERM
 mkdir -p "$stage/package" "$root/dist"
 cp "$root/manifest.json" "$stage/package/manifest.json"
 cp -R "$root/files" "$stage/package/files"
+cp -R "$root/scripts" "$stage/package/scripts"
 
-find "$stage/package" -exec touch -t 202610040000 {} +
+find "$stage/package" -exec touch -t 202610220000 {} +
 archive="$stage/sumoffice-espocrm-$version.zip"
 (
   cd "$stage/package"
-  find manifest.json files -type f -print | LC_ALL=C sort | zip -X -q "$archive" -@
+  find manifest.json files scripts -type f -print | LC_ALL=C sort | zip -X -q "$archive" -@
 )
 
 output="$root/dist/sumoffice-espocrm-$version.zip"

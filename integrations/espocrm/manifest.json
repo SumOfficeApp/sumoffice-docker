@@ -1,6 +1,6 @@
 {
   "name": "SumOffice for EspoCRM",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "acceptableVersions": [
     ">=9.0.0"
   ],
@@ -9,7 +9,7 @@
   ],
   "author": "SumOffice",
   "description": "Open and edit .xlsx, .xlsm, .xlsb, .docx and .pptx documents in SumOffice over WOPI. Ctrl+S saves back into the same EspoCRM file.",
-  "releaseDate": "2026-10-04",
+  "releaseDate": "2026-10-22",
   "authorUrl": "https://sumoffice.com",
   "supportUrl": "mailto:hello@sumoffice.com"
 }

@@ -1,0 +1,12 @@
+{
+    "fields": {
+        "sumofficeDiscoveryUrl": "Discovery URL",
+        "sumofficeVerifyProof": "Verify WOPI proof",
+        "sumofficeCaBundle": "CA bundle (private certificate only)"
+    },
+    "tooltips": {
+        "sumofficeDiscoveryUrl": "The WOPI discovery address of your SumOffice stack, as the EspoCRM server reaches it, e.g. https://office.example.com/hosting/discovery. Press Check connection after saving.",
+        "sumofficeVerifyProof": "Every call from the editors is checked against the proof key published in discovery. Keep it on in production.",
+        "sumofficeCaBundle": "Path to a CA bundle on the EspoCRM server, only when the SumOffice stack uses a certificate from a private CA. Leave empty for a public certificate."
+    }
+}

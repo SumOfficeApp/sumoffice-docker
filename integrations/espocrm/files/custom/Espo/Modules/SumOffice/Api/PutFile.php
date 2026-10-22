@@ -37,6 +37,7 @@ class PutFile implements Action
         }
         $body = (string) $request->getBodyContents();
         $this->wopi->write($attachment, $body);
+        $this->wopi->touchParent($attachment, $user);
 
         return $response->setHeader('X-WOPI-ItemVersion', md5($body));
     }

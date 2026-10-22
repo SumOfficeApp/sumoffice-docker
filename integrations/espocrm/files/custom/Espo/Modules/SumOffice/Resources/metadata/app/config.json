@@ -1,0 +1,7 @@
+{
+    "params": {
+        "sumofficeDiscoveryUrl": {"level": "admin"},
+        "sumofficeVerifyProof": {"level": "admin"},
+        "sumofficeCaBundle": {"level": "admin"}
+    }
+}

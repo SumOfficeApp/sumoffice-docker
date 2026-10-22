@@ -1,0 +1,19 @@
+{
+    "fields": {
+        "sumofficeDiscoveryUrl": {
+            "type": "varchar",
+            "maxLength": 500,
+            "tooltip": true
+        },
+        "sumofficeVerifyProof": {
+            "type": "bool",
+            "default": true,
+            "tooltip": true
+        },
+        "sumofficeCaBundle": {
+            "type": "varchar",
+            "maxLength": 500,
+            "tooltip": true
+        }
+    }
+}

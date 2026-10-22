@@ -41,6 +41,11 @@ class H(http.server.BaseHTTPRequestHandler):
             # Nextcloud expects a Capabilities app pointing at /hosting/capabilities, the way Collabora publishes it.
             extra.append(f'<app name="Capabilities"><action name="getinfo" ext="" default="true" urlsrc="{PUBLIC}/hosting/capabilities"/></app>')
             proof = re.search(r"<proof-key[^>]*/>|<proof-key.*?</proof-key>", a, re.S)
+            # One <proof-key> for both editors: they must share it (SUMOFFICE_WOPI_PROOF_DIR in
+            # docker-compose.yml). Two keys = a verifying host rejects one editor; say so loudly.
+            fproof = re.search(r'<proof-key[^>]*modulus="([^"]*)"', f); aproof = re.search(r'<proof-key[^>]*modulus="([^"]*)"', a)
+            if fproof and aproof and fproof.group(1) != aproof.group(1):
+                sys.stderr.write("[merge] WARNING: SumDoc and SumSheet sign with different proof keys; hosts that verify X-WOPI-Proof will reject SumSheet. Give both editors SUMOFFICE_WOPI_PROOF_DIR on one volume.\n")
             body = '<?xml version="1.0" encoding="UTF-8"?><wopi-discovery><net-zone name="external-http">' + "".join(apps) + "".join(extra) + "</net-zone>" + sharepoint_zone(a, f) + (proof.group(0) if proof else "") + "</wopi-discovery>"
             data = body.encode(); self.send_response(200); self.send_header("Content-Type","text/xml; charset=utf-8"); self.send_header("Content-Length", str(len(data))); self.end_headers(); self.wfile.write(data); return
         if self.path.startswith("/hosting/capabilities"):

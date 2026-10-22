@@ -1,0 +1,9 @@
+[
+    {
+        "label": "SumOffice editors",
+        "rows": [
+            [{"name": "sumofficeDiscoveryUrl", "fullWidth": true}],
+            [{"name": "sumofficeVerifyProof"}, {"name": "sumofficeCaBundle"}]
+        ]
+    }
+]

@@ -5,6 +5,9 @@
 //   GET   /drive/v3/about                    the signed-in user
 //   GET   /drive/v3/files/{id}               metadata; with ?alt=media the head revision's bytes
 //   PATCH /upload/drive/v3/files/{id}?uploadType=media   a new revision of the same file
+//   GET   /drive/v3/files/{id}/export?mimeType  a Google Docs/Sheets/Slides file in an Office format
+//   POST  /upload/drive/v3/files?uploadType=multipart    a new file; a parent folder must be writable
+// The token's scope is the scope that was asked for. Folders are { id: { writers: [...] } }.
 // Like Google, a refresh token comes only with the first consent, or with prompt=consent.
 // A user may read a file they own, write or read; canEdit is true for the owner and writers,
 // and a PATCH by anybody else is answered 403.
@@ -13,12 +16,13 @@ import { randomBytes } from "node:crypto";
 
 const SCOPE = "https://www.googleapis.com/auth/drive.file";
 
-export function mockGoogle({ clientId, clientSecret, users = {}, files = [], consented = [] }) {
-  const byId = new Map(); // id -> { name, mimeType, owner, writers:Set, readers:Set, version, revisions: [{ id, data, by }] }
+export function mockGoogle({ clientId, clientSecret, users = {}, files = [], consented = [], folders = {} }) {
+  const byId = new Map(); // id -> { name, mimeType, owner, writers:Set, readers:Set, parents, exports, version, revisions: [{ id, data, by }] }
   for (const f of files) {
     byId.set(f.id, { name: f.name, mimeType: f.mimeType, owner: f.owner, writers: new Set(f.writers ?? []), readers: new Set(f.readers ?? []),
-      version: 1, revisions: [{ id: "r1", data: f.data, by: f.owner }] });
+      parents: f.parents ?? [], exports: f.exports ?? {}, version: 1, revisions: [{ id: "r1", data: f.data, by: f.owner }] });
   }
+  const created = []; // ids of files made by POST /upload/drive/v3/files, in order
   const codes = new Map();    // code -> { user, redirectUri, scope, refresh }
   const access = new Map();   // access token -> user
   const refreshes = new Map(); // refresh token -> user
@@ -37,15 +41,16 @@ export function mockGoogle({ clientId, clientSecret, users = {}, files = [], con
     const q = u.searchParams;
 
     if (u.pathname === "/o/oauth2/v2/auth" && req.method === "GET") {
-      const user = q.get("login_hint") ?? "";
+      const user = q.get("login_hint") || Object.keys(users)[0] || "";
       if (q.get("client_id") !== clientId || q.get("response_type") !== "code" || !q.get("redirect_uri")) return json(400, { error: "invalid_request" });
       if (!String(q.get("scope")).split(" ").includes(SCOPE) || !users[user]) return json(400, { error: "invalid_scope" });
       const code = rnd("4/");
       const refresh = q.get("access_type") === "offline" && (!agreed.has(user) || q.get("prompt") === "consent");
-      codes.set(code, { user, redirectUri: q.get("redirect_uri"), scope: SCOPE, refresh });
+      const scope = String(q.get("scope"));
+      codes.set(code, { user, redirectUri: q.get("redirect_uri"), scope, refresh });
       agreed.add(user);
       const to = new URL(q.get("redirect_uri"));
-      to.searchParams.set("code", code); to.searchParams.set("scope", SCOPE); to.searchParams.set("state", q.get("state") ?? "");
+      to.searchParams.set("code", code); to.searchParams.set("scope", scope); to.searchParams.set("state", q.get("state") ?? "");
       res.writeHead(302, { location: String(to) }); return res.end();
     }
 
@@ -54,11 +59,12 @@ export function mockGoogle({ clientId, clientSecret, users = {}, files = [], con
       if (f.get("client_id") !== clientId || f.get("client_secret") !== clientSecret) return json(401, { error: "invalid_client" });
       let user;
       let refresh = null;
+      let scope = SCOPE;
       if (f.get("grant_type") === "authorization_code") {
         const c = codes.get(f.get("code") ?? "");
         codes.delete(f.get("code") ?? "");
         if (!c || c.redirectUri !== f.get("redirect_uri")) return json(400, { error: "invalid_grant" });
-        user = c.user;
+        user = c.user; scope = c.scope;
         if (c.refresh) { refresh = rnd("1//"); refreshes.set(refresh, user); issued.push(refresh); }
       } else if (f.get("grant_type") === "refresh_token") {
         user = refreshes.get(f.get("refresh_token") ?? "");
@@ -67,7 +73,7 @@ export function mockGoogle({ clientId, clientSecret, users = {}, files = [], con
       } else return json(400, { error: "unsupported_grant_type" });
       const token = rnd("ya29.");
       access.set(token, user); issued.push(token);
-      return json(200, { access_token: token, expires_in: 3599, token_type: "Bearer", scope: SCOPE, ...(refresh ? { refresh_token: refresh } : {}) });
+      return json(200, { access_token: token, expires_in: 3599, token_type: "Bearer", scope, ...(refresh ? { refresh_token: refresh } : {}) });
     }
 
     const user = access.get(/^Bearer (.+)$/.exec(req.headers.authorization ?? "")?.[1] ?? "");
@@ -76,6 +82,33 @@ export function mockGoogle({ clientId, clientSecret, users = {}, files = [], con
     if (u.pathname === "/drive/v3/about" && req.method === "GET") {
       return json(200, { user: { kind: "drive#user", displayName: users[user].name, emailAddress: users[user].email, permissionId: user } });
     }
+    if (u.pathname === "/upload/drive/v3/files" && req.method === "POST") {
+      if (q.get("uploadType") !== "multipart") return json(400, { error: { code: 400, message: "Bad uploadType" } });
+      const boundary = /boundary=([^;]+)/.exec(req.headers["content-type"] ?? "")?.[1];
+      const raw = body.toString("latin1");
+      const parts = boundary ? raw.split(`--${boundary}`).slice(1, -1) : [];
+      if (parts.length !== 2) return json(400, { error: { code: 400, message: "Bad multipart body" } });
+      const piece = (p) => p.slice(p.indexOf("\r\n\r\n") + 4, p.endsWith("\r\n") ? -2 : undefined);
+      const meta = JSON.parse(Buffer.from(piece(parts[0]), "latin1").toString("utf8"));
+      for (const parent of meta.parents ?? []) {
+        if (!folders[parent]) return json(404, { error: { code: 404, message: `File not found: ${parent}.` } });
+        if (!(folders[parent].writers ?? []).includes(user)) return json(403, { error: { code: 403, message: "insufficientParentPermissions" } });
+      }
+      const id = rnd("new");
+      byId.set(id, { name: meta.name, mimeType: meta.mimeType, owner: user, writers: new Set(), readers: new Set(), parents: meta.parents ?? ["root"],
+        appProperties: meta.appProperties ?? {}, exports: {}, version: 1, revisions: [{ id: "r1", data: Buffer.from(piece(parts[1]), "latin1"), by: user }] });
+      created.push(id);
+      return json(200, { id, name: meta.name });
+    }
+    const x = u.pathname.match(/^\/drive\/v3\/files\/([\w-]+)\/export$/);
+    if (x && req.method === "GET") {
+      const f = byId.get(x[1]);
+      if (!f || !(f.owner === user || f.writers.has(user) || f.readers.has(user))) return json(404, { error: { code: 404, message: `File not found: ${x[1]}.` } });
+      const out = f.exports[q.get("mimeType")];
+      if (out === "too-large") return json(403, { error: { code: 403, message: "This file is too large to be exported.", errors: [{ reason: "exportSizeLimitExceeded" }] } });
+      if (!out) return json(400, { error: { code: 400, message: "Export only supports Docs Editors files." } });
+      res.writeHead(200, { "content-type": q.get("mimeType") }); return res.end(out);
+    }
     const m = u.pathname.match(/^(\/upload)?\/drive\/v3\/files\/([\w-]+)$/);
     const f = m && byId.get(m[2]);
     const can = f && { edit: f.owner === user || f.writers.has(user), read: f.owner === user || f.writers.has(user) || f.readers.has(user) };
@@ -83,7 +116,7 @@ export function mockGoogle({ clientId, clientSecret, users = {}, files = [], con
     if (m && !m[1] && req.method === "GET") {
       const head = f.revisions.at(-1);
       if (q.get("alt") === "media") { res.writeHead(200, { "content-type": f.mimeType }); return res.end(head.data); }
-      return json(200, { name: f.name, mimeType: f.mimeType, size: String(head.data.length), version: String(f.version), headRevisionId: head.id,
+      return json(200, { name: f.name, mimeType: f.mimeType, parents: f.parents, size: String(head.data.length), version: String(f.version), headRevisionId: head.id,
         capabilities: { canEdit: can.edit }, owners: [{ displayName: users[f.owner]?.name, permissionId: f.owner }] });
     }
     if (m && m[1] && req.method === "PATCH") {
@@ -98,7 +131,7 @@ export function mockGoogle({ clientId, clientSecret, users = {}, files = [], con
   });
   // Every access token stops working, as after an hour: the bridge must use the refresh token.
   const expireAccessTokens = () => access.clear();
-  return { server, byId, calls, issued, stats, expireAccessTokens };
+  return { server, byId, calls, issued, stats, created, expireAccessTokens };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

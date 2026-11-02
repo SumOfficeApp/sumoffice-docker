@@ -395,3 +395,70 @@ test("Importing: Google Docs, Sheets and Slides open as a .docx/.xlsx/.pptx copy
   const picker = await (await through(await fetch(`${base}/google/pick`, { redirect: "manual" }))).text();
   for (const m of ["document", "spreadsheet", "presentation"]) assert.match(picker, new RegExp(`application/vnd\\.google-apps\\.${m}`));
 });
+
+test("Open with refused by Drive: the reason is told apart, the Picker opens on that one file, another account can sign in", async (t) => {
+  const { g, base, through, call } = await rig(t, {
+    users: { "u-ana": { name: "Ana A", email: "ana@example.com" }, "u-work": { name: "Work W", email: "work@example.com" } },
+    files: [
+      // A Google Sheet shared with Ana that Drive did not hand over to the app.
+      { id: "gshared", name: "Research export", mimeType: "application/vnd.google-apps.spreadsheet", owner: "u-other", parents: ["fold-x"],
+        data: Buffer.alloc(0), exports: { [XLSX]: Buffer.from("PK shared sheet") } },
+      { id: "glocked", name: "No copies", mimeType: "application/vnd.google-apps.document", owner: "u-other", readers: ["u-ana"],
+        data: Buffer.alloc(0), exports: { [DOCX]: "no-download" } },
+      { id: "mine", name: "mine.docx", mimeType: DOCX, owner: "u-ana", data: Buffer.from("PK mine") },
+    ],
+  });
+  const openWith = (state, extra = "") => fetch(`${base}/google/open?state=${encodeURIComponent(JSON.stringify({ action: "open", userId: "u-ana", ...state }))}${extra}`, { redirect: "manual" });
+  const errors = []; const log = console.error; console.error = (...a) => errors.push(a.join(" ")); t.after(() => { console.error = log; });
+
+  // 404 from files.get: not "did not find" alone — the account, the Picker on this file, another account.
+  const nf = await through(await openWith({ ids: ["gshared"] }));
+  assert.equal(nf.status, 404);
+  const nfPage = await nf.text();
+  assert.match(nfPage, /did not show this file to SumOffice for ana@example\.com/);
+  assert.match(nfPage, /href="\/google\/pick\?f=gshared&#38;u=u-ana"/);
+  const other = nfPage.match(/href="(\/google\/open\?[^"]+account=choose)"/)[1].replace(/&#38;/g, "&");
+  assert.match(errors.join("\n"), /open: drive files\.get 404 \?, file gshare…, imported copy false, other account false/, "Drive's answer is in the log");
+  assert.ok(!errors.join("\n").includes("ana@"), "no e-mail in the log");
+
+  // Russian page for a Russian browser.
+  const ru = await through(await openWith({ ids: ["gshared"] }), { headers: { "accept-language": "ru-RU" } });
+  assert.match(await ru.text(), /Выбрать файл в Google Drive™/);
+  // "Use another Google account": Google's account chooser, the Drive user preselected.
+  const o1 = await fetch(`${base}${other}`, { redirect: "manual" });
+  const chooser = new URL(o1.headers.get("location"));
+  assert.equal(chooser.searchParams.get("prompt"), "select_account");
+  assert.equal(chooser.searchParams.get("login_hint"), "u-ana");
+
+  // The Picker opens on that file; choosing it there grants access (the mock: Ana becomes a reader).
+  const p1 = await fetch(`${base}/google/pick?f=gshared&u=u-ana`, { redirect: "manual" });
+  assert.equal(new URL(p1.headers.get("location")).searchParams.get("login_hint"), "u-ana");
+  const pickerPage = await (await through(p1)).text();
+  assert.match(pickerPage, /"fileId":"gshared"/);
+  assert.match(pickerPage, /setFileIds\(cfg\.fileId\)/);
+  g.byId.get("gshared").readers.add("u-ana");
+  const pickToken = pickerPage.match(/name="pick_token" value="([^"]+)"/)[1];
+  const opened = await fetch(`${base}/google/picked`, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ pick_token: pickToken, fileId: "gshared", resourceKey: "" }) });
+  assert.equal(opened.status, 200);
+  const openedPage = await opened.text();
+  const copy = g.byId.get(g.created[0]);
+  assert.equal(copy.name, "Research export.xlsx");
+  assert.deepEqual(copy.parents, ["root"], "the parent folder is not the person's: the copy goes to My Drive");
+  assert.equal((await (await call(openedPage)).json()).UserCanWrite, true);
+
+  // The owner forbade copies for viewers: said so, not "not found".
+  const locked = await through(await openWith({ ids: ["glocked"] }));
+  assert.equal(locked.status, 403);
+  assert.match(await locked.text(), /turned off downloading, printing and copying/);
+  assert.equal(g.created.length, 1);
+
+  // Two accounts in one browser: Drive's user is Ana, Google signs in the work account.
+  const wrong = await through(await openWith({ ids: ["mine"] }), { edit: (a) => { a.searchParams.set("login_hint", "u-work"); return a; } });
+  assert.equal(wrong.status, 409);
+  const wrongPage = await wrong.text();
+  assert.match(wrongPage, /signed in here as work@example\.com/);
+  assert.match(wrongPage, /account=choose/);
+  // And with the right account the same file opens.
+  assert.equal((await through(await openWith({ ids: ["mine"] }))).status, 200);
+});

@@ -73,7 +73,9 @@ export function mockGoogle({ clientId, clientSecret, users = {}, files = [], con
       } else return json(400, { error: "unsupported_grant_type" });
       const token = rnd("ya29.");
       access.set(token, user); issued.push(token);
-      return json(200, { access_token: token, expires_in: 3599, token_type: "Bearer", scope, ...(refresh ? { refresh_token: refresh } : {}) });
+      // An OpenID id_token whose subject is the signed-in user (the bridge reads only "sub").
+      const idToken = `e30.${Buffer.from(JSON.stringify({ sub: user })).toString("base64url")}.sig`;
+      return json(200, { access_token: token, expires_in: 3599, token_type: "Bearer", scope, id_token: idToken, ...(refresh ? { refresh_token: refresh } : {}) });
     }
 
     const user = access.get(/^Bearer (.+)$/.exec(req.headers.authorization ?? "")?.[1] ?? "");
@@ -105,6 +107,7 @@ export function mockGoogle({ clientId, clientSecret, users = {}, files = [], con
       const f = byId.get(x[1]);
       if (!f || !(f.owner === user || f.writers.has(user) || f.readers.has(user))) return json(404, { error: { code: 404, message: `File not found: ${x[1]}.` } });
       const out = f.exports[q.get("mimeType")];
+      if (out === "no-download") return json(403, { error: { code: 403, message: "This file cannot be exported by the user.", errors: [{ reason: "cannotExportFile" }] } });
       if (out === "too-large") return json(403, { error: { code: 403, message: "This file is too large to be exported.", errors: [{ reason: "exportSizeLimitExceeded" }] } });
       if (!out) return json(400, { error: { code: 400, message: "Export only supports Docs Editors files." } });
       res.writeHead(200, { "content-type": q.get("mimeType") }); return res.end(out);

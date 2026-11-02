@@ -109,6 +109,12 @@ Google refresh tokens never reach the browser. They stay in the service's memory
 ## Rights
 
 - **Opening.** Drive offers "Open with → SumOffice" to people who can see the file. The bridge reads the file with that person's own token, so it sees exactly what they may see.
+- **When Drive refuses the file.** `files.get` answering `404` or `403` (another Google account signed in, or Drive did not hand the file to the app, which happens with Google Docs, Sheets and Slides shared with the person) gives a page instead of a bare error:
+  - **Choose the file in Google Drive™** opens the Picker on that one file (`/google/pick?f={id}`). Choosing it in the Picker gives `drive.file` access, and the file opens.
+  - **Use another Google account** starts the sign-in again with Google's account chooser (`prompt=select_account`), the Drive user as `login_hint`.
+  - If the id_token's `sub` is not Drive's `userId`, the page says that another account signed in. An account that can see the file opens it anyway.
+  - An owner who turned off downloading and copying for viewers (`cannotExportFile`) is named as the reason. Nothing is copied.
+  - The log gets Drive's status and reason, the first six characters of the file id and whether another account signed in; no names or e-mail addresses.
 - **Saving.**
   - `UserCanWrite` is Drive's `capabilities.canEdit`, read again on every CheckFileInfo.
   - A reader gets the editor's view action; their LOCK and PutFile are answered `401`.
@@ -127,6 +133,8 @@ Google refresh tokens never reach the browser. They stay in the service's memory
   - Locks are kept in the bridge's memory for 30 minutes.
 
 ## Checked on
+
+03.11.2026: the first live "Open with" of a Google Sheet shared with the person ended on "did not find this file". The refusal page, the Picker on one file, the account check and Drive's reason in the log were added and tested against the mock (now with an id_token and an export forbidden for viewers).
 
 29.10.2026: the install entry and Importing were added and tested against the same mock, now with `files.export`, multipart file creation, writable and read-only parent folders, and the token's scope echoing the scopes asked for. Not yet checked against the real Google Drive: the owner does that live probe.
 

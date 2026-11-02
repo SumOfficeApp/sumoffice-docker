@@ -197,7 +197,9 @@ async function drive(c, s, method, path, { body, headers = {}, follow = false } 
     if (res.status === 401 && !retried && g.refresh) { await res.body?.cancel(); await refresh(c, g); continue; }
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      throw Object.assign(new Error(`drive ${method} ${path.split("?")[0]}: ${res.status} ${text.slice(0, 200)}`), { status: res.status });
+      let reason = "";
+      try { const e = JSON.parse(text).error ?? {}; reason = String(e.errors?.[0]?.reason ?? e.status ?? ""); } catch { /* not JSON */ }
+      throw Object.assign(new Error(`drive ${method} ${path.split("?")[0]}: ${res.status} ${reason || text.slice(0, 200)}`), { status: res.status, reason });
     }
     return res;
   }
@@ -309,7 +311,7 @@ function cookies(req) {
 
 // Sends the browser to Google's sign-in. The state is HMAC-signed, lives ten minutes, works once,
 // and is bound to this browser by a cookie named after its nonce.
-function authorize(c, res, { f = "", rk = "", u = "", p = "" }, consent) {
+function authorize(c, res, { f = "", rk = "", u = "", p = "" }, consent, choose = false) {
   const n = newId();
   const route = p === "pick" || p === "install" ? p : "";
   const state = signed(c.tokenKey, { op: "oauth", f, rk, u, p: route, n, c: consent ? 1 : 0, e: Math.floor(Date.now() / 1000) + STATE_TTL });
@@ -318,7 +320,9 @@ function authorize(c, res, { f = "", rk = "", u = "", p = "" }, consent) {
     access_type: "offline", include_granted_scopes: "true", state,
   });
   if (u) q.set("login_hint", u); // the Drive user who chose "Open with", for people signed in to several accounts
-  if (consent) q.set("prompt", "consent");
+  // "Use another Google account": Google shows its account chooser, the Drive user preselected.
+  const prompt = [choose ? "select_account" : "", consent ? "consent" : ""].filter(Boolean).join(" ");
+  if (prompt) q.set("prompt", prompt);
   const secure = c.publicUrl.startsWith("https:") ? "; Secure" : "";
   send(res, 302, "", {
     location: `${c.authUrl}?${q}`, "cache-control": "no-store",
@@ -391,17 +395,17 @@ function googleHome(res) {
   });
 }
 
-function pickerPage(c, res, grant, user, userName) {
+function pickerPage(c, res, grant, user, userName, email = "", fileId = "") {
   if (!c.pickerKey) return text(res, 503, "Google Picker is not configured.");
   for (const [key, value] of pickerSessions) if (value.until < Date.now()) pickerSessions.delete(key);
   const id = newId();
   const e = Math.floor(Date.now() / 1000) + STATE_TTL;
-  pickerSessions.set(id, { grant, user, userName, until: e * 1000 });
+  pickerSessions.set(id, { grant, user, userName, email, until: e * 1000 });
   const pickToken = signed(c.tokenKey, { op: "pick", id, e });
   const nonce = newId();
   const cfg = JSON.stringify({
     accessToken: grant.access, apiKey: c.pickerKey, appId: c.pickerAppId,
-    mimeTypes: PICKER_MIME_TYPES, origin: c.publicUrl,
+    mimeTypes: PICKER_MIME_TYPES, origin: c.publicUrl, fileId,
   }).replace(/</g, "\\u003c");
   const h = (s) => String(s).replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
   send(res, 200, `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -410,7 +414,7 @@ function pickerPage(c, res, grant, user, userName) {
 <form id="picked" method="post" action="/google/picked" hidden><input type="hidden" name="pick_token" value="${h(pickToken)}"><input id="fileId" type="hidden" name="fileId"><input id="resourceKey" type="hidden" name="resourceKey"></form>
 <script src="https://apis.google.com/js/api.js"></script><script nonce="${nonce}">const cfg=${cfg};
 const status=document.getElementById("status"),again=document.getElementById("again"),form=document.getElementById("picked");
-function showPicker(){const view=new google.picker.DocsView(google.picker.ViewId.DOCS).setMimeTypes(cfg.mimeTypes);const picker=new google.picker.PickerBuilder().addView(view).setOAuthToken(cfg.accessToken).setDeveloperKey(cfg.apiKey).setAppId(cfg.appId).setOrigin(cfg.origin).setTitle("Open a file from Google Drive™").setCallback((data)=>{if(data.action===google.picker.Action.PICKED){const docs=data[google.picker.Response.DOCUMENTS]||data.docs||[],doc=docs[0];if(!doc||!doc.id){status.textContent="No file was selected.";again.hidden=false;return}document.getElementById("fileId").value=doc.id;document.getElementById("resourceKey").value=doc.resourceKey||"";status.textContent="Opening the selected file…";form.submit()}else if(data.action===google.picker.Action.CANCEL){status.textContent="No file was selected.";again.hidden=false}}).build();picker.setVisible(true)}
+function showPicker(){const view=new google.picker.DocsView(google.picker.ViewId.DOCS).setMimeTypes(cfg.mimeTypes);if(cfg.fileId&&view.setFileIds)view.setFileIds(cfg.fileId);const picker=new google.picker.PickerBuilder().addView(view).setOAuthToken(cfg.accessToken).setDeveloperKey(cfg.apiKey).setAppId(cfg.appId).setOrigin(cfg.origin).setTitle("Open a file from Google Drive™").setCallback((data)=>{if(data.action===google.picker.Action.PICKED){const docs=data[google.picker.Response.DOCUMENTS]||data.docs||[],doc=docs[0];if(!doc||!doc.id){status.textContent="No file was selected.";again.hidden=false;return}document.getElementById("fileId").value=doc.id;document.getElementById("resourceKey").value=doc.resourceKey||"";status.textContent="Opening the selected file…";form.submit()}else if(data.action===google.picker.Action.CANCEL){status.textContent="No file was selected.";again.hidden=false}}).build();picker.setVisible(true)}
 again.addEventListener("click",()=>{again.hidden=true;status.textContent="Opening the file picker…";showPicker()});gapi.load("picker",{callback:showPicker});</script></html>`, {
     "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "referrer-policy": "strict-origin",
     "x-frame-options": "DENY", "content-security-policy": `default-src 'none'; script-src 'nonce-${nonce}' https://apis.google.com https://www.gstatic.com; style-src 'nonce-${nonce}'; frame-src https://docs.google.com https://drive.google.com; connect-src https://www.googleapis.com https://oauth2.googleapis.com https://apis.google.com`,
@@ -428,12 +432,70 @@ async function openWith(c, req, res) {
   }
   const rk = String(st.resourceKeys?.[fileId] ?? "");
   const u = typeof st.userId === "string" && /^[\w.@+-]{1,200}$/.test(st.userId) ? st.userId : "";
-  return authorize(c, res, { f: fileId, rk: /^[\w-]{1,200}$/.test(rk) ? rk : "", u }, false);
+  const choose = new URL(req.url, "http://x").searchParams.get("account") === "choose";
+  return authorize(c, res, { f: fileId, rk: /^[\w-]{1,200}$/.test(rk) ? rk : "", u }, false, choose);
 }
 
-function pick(c, res) {
+// /google/pick?f={id}&u={Drive user}: the Picker opens on that one file. Choosing it in the Picker is
+// what gives SumOffice (drive.file) access to a file that "Open with" did not hand over.
+function pick(c, req, res) {
   if (!c.pickerKey) return text(res, 503, "Google Picker is not configured.");
-  return authorize(c, res, { p: "pick" }, false);
+  const q = new URL(req.url, "http://x").searchParams;
+  const f = /^[\w-]{1,200}$/.test(q.get("f") ?? "") ? q.get("f") : "";
+  const u = /^[\w.@+-]{1,200}$/.test(q.get("u") ?? "") ? q.get("u") : "";
+  return authorize(c, res, { p: "pick", f, u }, false);
+}
+
+// The id_token's subject is the Google account that signed in; Drive's state.userId is the account
+// that chose "Open with". Without an id_token the check is skipped.
+function signedInAs(tok) {
+  try { return String(JSON.parse(unb64(String(tok.id_token ?? "").split(".")[1] ?? "").toString()).sub ?? ""); } catch { return ""; }
+}
+
+const OPEN_TEXT = {
+  en: {
+    title: "SumOffice cannot open this file yet",
+    notFound: (who) => `Google Drive™ did not show this file to SumOffice for ${who}.`,
+    why: "This happens when the file was opened from a different Google account than the one that signed in here, or when Google Drive™ has not yet given SumOffice access to the file (often for Google Docs™, Sheets™ and Slides™ shared with you).",
+    pick: "Choose the file in Google Drive™",
+    pickNote: "Google Drive™ shows only this file. Choosing it gives SumOffice access to it, and the file opens.",
+    other: "Use another Google account",
+    denied: (who, reason) => `Google Drive™ refused SumOffice access to this file for ${who}${reason ? ` (${reason})` : ""}.`,
+    wrongTitle: "Another Google account signed in",
+    wrong: (who) => `You opened the file in Google Drive™ from one Google account, but signed in here as ${who}. Sign in with the account where the file is.`,
+    signIn: "Sign in with the right account",
+    noExport: "The owner of this file turned off downloading, printing and copying for people who can only view or comment, so Google Drive™ does not let SumOffice export it. Ask the owner for edit access, or for a copy.",
+    exportDenied: (reason) => `Google Drive™ did not let SumOffice export this file${reason ? ` (${reason})` : ""}.`,
+  },
+  ru: {
+    title: "SumOffice пока не может открыть этот файл",
+    notFound: (who) => `Google Drive™ не показал этот файл SumOffice для ${who}.`,
+    why: "Так бывает, если файл открыт в Google Drive™ из другого аккаунта Google, чем тот, что вошёл здесь, или Google Drive™ ещё не дал SumOffice доступ к файлу (часто для Google Документов™, Таблиц™ и Презентаций™, которыми с вами поделились).",
+    pick: "Выбрать файл в Google Drive™",
+    pickNote: "Google Drive™ покажет только этот файл. Выбор даёт SumOffice доступ к нему, и файл откроется.",
+    other: "Войти в другой аккаунт Google",
+    denied: (who, reason) => `Google Drive™ отказал SumOffice в доступе к этому файлу для ${who}${reason ? ` (${reason})` : ""}.`,
+    wrongTitle: "Вошёл другой аккаунт Google",
+    wrong: (who) => `Файл открыт в Google Drive™ из одного аккаунта Google, а здесь вошёл ${who}. Войдите под тем аккаунтом, где лежит файл.`,
+    signIn: "Войти под нужным аккаунтом",
+    noExport: "Владелец файла запретил скачивание, печать и копирование тем, кто может только смотреть или комментировать, поэтому Google Drive™ не даёт SumOffice выгрузить файл. Попросите у владельца право редактирования или копию.",
+    exportDenied: (reason) => `Google Drive™ не дал SumOffice выгрузить этот файл${reason ? ` (${reason})` : ""}.`,
+  },
+};
+
+// Drive's own "Open with" state again, for the "another account" button.
+function reopenUrl(fileId, resourceKey, u) {
+  const state = JSON.stringify({ ids: [fileId], action: "open", ...(u ? { userId: u } : {}), resourceKeys: resourceKey ? { [fileId]: resourceKey } : {} });
+  return `/google/open?state=${encodeURIComponent(state)}&account=choose`;
+}
+
+function cannotOpen(c, req, res, status, { fileId, resourceKey = "", u = "", lead, offerPick = true }) {
+  const lang = isRu(req) ? "ru" : "en"; const t = OPEN_TEXT[lang];
+  const pickHref = `/google/pick?${new URLSearchParams({ f: fileId, ...(u ? { u } : {}) })}`;
+  const pickPart = offerPick && c.pickerKey
+    ? `<a class="button" href="${esc(pickHref)}">${esc(t.pick)}</a><p class="note">${esc(t.pickNote)}</p>` : "";
+  page(res, status, lang, t.title, `<h1>${esc(t.title)}</h1><p>${esc(lead)}</p><p>${esc(t.why)}</p>${pickPart}
+<p><a class="button" href="${esc(reopenUrl(fileId, resourceKey, u))}">${esc(t.other)}</a></p>`);
 }
 
 function editor(c, res, id, name, action) {
@@ -450,23 +512,38 @@ function editor(c, res, id, name, action) {
 <script>document.getElementById("f").submit()</script>`, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
 }
 
-async function openEditorForFile(c, res, { grant, fileId, resourceKey = "", user, userName, imported = false }) {
+async function openEditorForFile(c, req, res, { grant, fileId, resourceKey = "", user, userName, email = "", driveUser = "", otherAccount = false, via = "open", imported = false }) {
   const s0 = { grant, fileId, resourceKey };
+  const lang = isRu(req) ? "ru" : "en"; const t = OPEN_TEXT[lang];
+  const who = email || userName || user;
   let m;
   try { m = await meta(c, s0); } catch (e) {
-    if (e.status === 404 || e.status === 403) return text(res, 404, "Google Drive™ did not find this file for your account.");
-    throw e;
+    if (e.status !== 404 && e.status !== 403) throw e;
+    // Which of Drive's refusals it was, without the person's name or the whole file id.
+    console.error(`[sumoffice-googledrive] ${via}: drive files.get ${e.status} ${e.reason || "?"}, file ${fileId.slice(0, 6)}…, imported copy ${imported}, other account ${otherAccount}`);
+    if (otherAccount) {
+      return page(res, 409, lang, t.wrongTitle, `<h1>${esc(t.wrongTitle)}</h1><p>${esc(t.wrong(who))}</p>
+<a class="button" href="${esc(reopenUrl(fileId, resourceKey, driveUser))}">${esc(t.signIn)}</a>`);
+    }
+    const lead = e.status === 404 ? t.notFound(who) : t.denied(who, e.reason);
+    return cannotOpen(c, req, res, e.status, { fileId, resourceKey, u: driveUser, lead, offerPick: !imported });
   }
   if (GOOGLE_NATIVE[m.mimeType] && !imported) {
     let copy;
     try { copy = await importCopy(c, s0, m); } catch (e) {
+      if (e.status === 403 || e.status === 404) console.error(`[sumoffice-googledrive] ${via}: drive export/copy ${e.status} ${e.reason || "?"}, file ${fileId.slice(0, 6)}…`);
       if (/exportSizeLimitExceeded/.test(e.message)) {
         return text(res, 413, `Google Drive™ exports files up to 10 MB only. In Drive choose File → Download → .${GOOGLE_NATIVE[m.mimeType]}, upload that file and open it with SumOffice.`);
       }
-      if (e.status === 403) return text(res, 403, "Google Drive™ does not allow this file to be exported or copied for your account.");
+      if (e.status === 403 && /cannotExportFile|cannotDownloadFile|fileNotDownloadable|cannotCopyFile/.test(e.reason)) {
+        return page(res, 403, lang, t.title, `<h1>${esc(t.title)}</h1><p>${esc(t.noExport)}</p>`);
+      }
+      if (e.status === 403 || e.status === 404) {
+        return cannotOpen(c, req, res, e.status, { fileId, resourceKey, u: driveUser, lead: t.exportDenied(e.reason) });
+      }
       throw e;
     }
-    return openEditorForFile(c, res, { grant, fileId: String(copy.id), user, userName, imported: true });
+    return openEditorForFile(c, req, res, { grant, fileId: String(copy.id), user, userName, email, driveUser, via, imported: true });
   }
   const ext = extOf(m);
   if (!EXTENSIONS.includes(ext)) return text(res, 415, `The editor does not open .${ext || "?"} files.`);
@@ -492,7 +569,7 @@ async function picked(c, req, res) {
     return text(res, 400, "This file selection is not valid or has expired. Choose the file again.");
   }
   pickerSessions.delete(st.id);
-  return openEditorForFile(c, res, { ...ps, fileId, resourceKey });
+  return openEditorForFile(c, req, res, { ...ps, fileId, resourceKey, via: "pick" });
 }
 
 async function callback(c, req, res) {
@@ -523,6 +600,10 @@ async function callback(c, req, res) {
   }
   const fresh = { access: tok.access_token, refresh: tok.refresh_token ?? "", exp: expiry(tok), pending: null };
   const me = await whoami(c, { grant: fresh });
+  // Several Google accounts in one browser: the one that signed in may not be the one that chose
+  // "Open with". Told only if Drive then refuses the file: an account that can see it just opens it.
+  const sub = signedInAs(tok);
+  const otherAccount = !!(st.u && sub && sub !== st.u);
   const user = String(me.permissionId ?? "");
   if (!user) throw new Error("drive about: no user");
   // Google gives a refresh token on the first consent only. If this process has none for the
@@ -534,8 +615,9 @@ async function callback(c, req, res) {
   else { g = fresh; grants.set(user, g); } // works until the access token expires
 
   const userName = String(me.displayName || me.emailAddress || user);
-  if (st.p === "pick") return pickerPage(c, res, g, user, userName);
-  return openEditorForFile(c, res, { grant: g, fileId: st.f, resourceKey: st.rk, user, userName });
+  const email = String(me.emailAddress ?? "");
+  if (st.p === "pick") return pickerPage(c, res, g, user, userName, email, st.f);
+  return openEditorForFile(c, req, res, { grant: g, fileId: st.f, resourceKey: st.rk, user, userName, email, driveUser: st.u, otherAccount });
 }
 
 async function wopi(c, req, res, id, contents) {
@@ -613,7 +695,7 @@ export function start(c = config()) {
       if ((path === "/google" || path === "/google/") && req.method === "GET") return googleHome(res);
       if (path === "/google/install" && req.method === "GET") return installPage(req, res);
       if (path === "/google/install/start" && req.method === "GET") return authorize(c, res, { p: "install" }, false);
-      if (path === "/google/pick" && req.method === "GET") return pick(c, res);
+      if (path === "/google/pick" && req.method === "GET") return pick(c, req, res);
       if (path === "/google/picked" && req.method === "POST") return await picked(c, req, res);
       if (path === "/google/open" && req.method === "GET") return await openWith(c, req, res);
       if (path === "/google/callback" && req.method === "GET") return await callback(c, req, res);

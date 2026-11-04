@@ -12,7 +12,7 @@ cp "$root/manifest.json" "$stage/package/manifest.json"
 cp -R "$root/files" "$stage/package/files"
 cp -R "$root/scripts" "$stage/package/scripts"
 
-find "$stage/package" -exec touch -t 202610220000 {} +
+find "$stage/package" -exec touch -t 202611050000 {} +
 archive="$stage/sumoffice-espocrm-$version.zip"
 (
   cd "$stage/package"

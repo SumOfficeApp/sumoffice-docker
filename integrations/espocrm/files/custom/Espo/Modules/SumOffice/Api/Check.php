@@ -20,9 +20,11 @@ class Check implements Action
         if (!$this->user->isAdmin()) {
             throw new Forbidden();
         }
-        $url = (string) $this->config->get('sumofficeDiscoveryUrl');
+        $url = $this->wopi->discoveryUrl();
         if ($url === '') {
-            return ResponseComposer::json(['ok' => false, 'message' => 'Discovery URL is empty.']);
+            return ResponseComposer::json(['ok' => false, 'message' => $this->wopi->setting('sumofficeDiscoveryUrl')
+                ? 'The SumOffice integration is turned off. Tick Enabled and save.'
+                : 'Discovery URL is empty. Enter it, save, then check again.']);
         }
         $discovery = $this->wopi->discovery(true);
         if (!$discovery) {
@@ -37,8 +39,10 @@ class Check implements Action
         }
         $missing = array_values(array_diff(Wopi::EXTENSIONS, $opens));
         $proof = !empty($discovery['proof']['modulus']);
-        $verify = $this->config->get('sumofficeVerifyProof', true) !== false;
+        $verify = $this->wopi->verifyProof();
         $ok = $opens !== [] && (!$verify || $proof);
+        $editorUrl = (string) (reset($discovery['actions']) ?: '');
+        $framed = $editorUrl === '' || $this->wopi->framed($editorUrl);
 
         return ResponseComposer::json([
             'ok' => $ok,
@@ -48,8 +52,10 @@ class Check implements Action
             'proofKey' => $proof,
             'verifyProof' => $verify,
             'siteUrl' => (string) $this->config->get('siteUrl'),
+            'framed' => $framed,
             'message' => $ok
                 ? 'Connected. Opens: .' . implode(', .', $opens) . ($missing ? '. Not offered by this stack: .' . implode(', .', $missing) : '') . '.'
+                    . ($framed ? '' : ' The editors are on another site than EspoCRM, so files open as a whole browser tab.')
                 : ($opens === [] ? 'Discovery has no actions for ' . implode(', ', Wopi::EXTENSIONS) . '.' : 'Discovery has no proof key while proof verification is on.'),
         ]);
     }

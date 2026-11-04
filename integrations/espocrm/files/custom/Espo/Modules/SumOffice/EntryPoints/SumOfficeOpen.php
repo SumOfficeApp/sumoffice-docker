@@ -46,9 +46,9 @@ class SumOfficeOpen implements EntryPoint
         }
         $discovery = $this->wopi->discovery();
         if (!$discovery) {
-            throw new Error($this->config->get('sumofficeDiscoveryUrl')
-                ? 'SumOffice editors are not reachable. An administrator can press Check connection in Administration → SumOffice.'
-                : 'SumOffice is not set up yet. An administrator sets the editor address in Administration → SumOffice.');
+            throw new Error($this->wopi->discoveryUrl() !== ''
+                ? 'SumOffice editors are not reachable. An administrator can press Check connection in Administration → Integrations → SumOffice.'
+                : 'SumOffice is not set up yet. An administrator turns it on and enters the editor address in Administration → Integrations → SumOffice.');
         }
         $canWrite = $this->wopi->canWrite($this->user, $attachment);
         $action = $discovery['actions']["$ext|" . ($canWrite ? 'edit' : 'view')] ?? $discovery['actions']["$ext|edit"] ?? null;
@@ -62,14 +62,16 @@ class SumOfficeOpen implements EntryPoint
         $target = $action . $sep . 'WOPISrc=' . rawurlencode($wopiSrc);
         [$token, $expires] = $this->wopi->makeToken($this->user->getId(), $attachment->getId(), $canWrite);
         $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES);
+        // Editors on another site than EspoCRM open as the whole tab: in a frame their cookie would be third-party.
+        $framed = $this->wopi->framed($target);
         $response->setHeader('Content-Type', 'text/html; charset=utf-8');
         $response->writeBody('<!doctype html><html><head><meta charset="utf-8"><title>' . $h((string) $attachment->getName()) . '</title>'
             . '<link rel="icon" href="client/img/favicon.ico">'
             . '<style>html,body{margin:0;height:100%;overflow:hidden}iframe{border:0;width:100%;height:100%;display:block}</style></head><body>'
-            . '<form id="sumoffice" action="' . $h($target) . '" method="post" target="sumoffice_frame">'
+            . '<form id="sumoffice" action="' . $h($target) . '" method="post" target="' . ($framed ? 'sumoffice_frame' : '_self') . '">'
             . '<input type="hidden" name="access_token" value="' . $h($token) . '">'
             . '<input type="hidden" name="access_token_ttl" value="' . ($expires * 1000) . '"></form>'
-            . '<iframe name="sumoffice_frame" title="SumOffice" allow="clipboard-read; clipboard-write; fullscreen"></iframe>'
+            . ($framed ? '<iframe name="sumoffice_frame" title="SumOffice" allow="clipboard-read; clipboard-write; fullscreen"></iframe>' : '')
             . '<script>document.getElementById("sumoffice").submit();</script></body></html>');
     }
 }

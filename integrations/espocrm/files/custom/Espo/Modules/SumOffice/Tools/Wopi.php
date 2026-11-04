@@ -17,6 +17,7 @@ use Espo\Core\FileStorage\Manager as FileStorageManager;
 use Espo\Core\ORM\EntityManager;
 use Espo\Core\Utils\Config;
 use Espo\Entities\Attachment;
+use Espo\Entities\Integration;
 use Espo\Entities\User;
 
 class Wopi
@@ -27,12 +28,97 @@ class Wopi
     private const PROOF_WINDOW = 1200;    // MS-WOPI: 20 minutes of clock skew
     private const DISCOVERY_TTL = 3600;
 
+    /** Administration → Integrations → SumOffice; the record id is the integration name. */
+    public const INTEGRATION = 'SumOffice';
+
+    private ?Integration $integration = null;
+    private bool $integrationLoaded = false;
+
     public function __construct(
         private Config $config,
         private EntityManager $entityManager,
         private AclManager $aclManager,
         private FileStorageManager $fileStorageManager
     ) {}
+
+    // ---- settings ---------------------------------------------------------------
+
+    private function integration(): ?Integration
+    {
+        if (!$this->integrationLoaded) {
+            $this->integrationLoaded = true;
+            // The Integration repository returns a new, unsaved record for an id it does not have.
+            $entity = $this->entityManager->getEntityById(Integration::ENTITY_TYPE, self::INTEGRATION);
+            $this->integration = $entity instanceof Integration && !$entity->isNew() ? $entity : null;
+        }
+
+        return $this->integration;
+    }
+
+    /**
+     * A SumOffice setting from Administration → Integrations → SumOffice.
+     * Before the integration record exists (1.0.3 kept them in data/config.php) the config value is used.
+     */
+    public function setting(string $name, mixed $default = null): mixed
+    {
+        $integration = $this->integration();
+        if ($integration) {
+            return $integration->get($name) ?? $default;
+        }
+
+        return $this->config->get($name, $default);
+    }
+
+    /** The discovery address, or '' while the integration is off or not filled in. */
+    public function discoveryUrl(): string
+    {
+        $integration = $this->integration();
+        if ($integration && !$integration->get('enabled')) {
+            return '';
+        }
+
+        return trim((string) $this->setting('sumofficeDiscoveryUrl', ''));
+    }
+
+    public function verifyProof(): bool
+    {
+        return $this->setting('sumofficeVerifyProof', true) !== false;
+    }
+
+    /**
+     * Open the editor inside EspoCRM's page (frame) or as the whole page.
+     * In a frame the editor's session cookie is third-party when the editors are on another site
+     * than EspoCRM, and Safari or Chrome with third-party cookies blocked refuse it — so "auto"
+     * frames the editor only when both are on the same site.
+     */
+    public function framed(string $editorUrl): bool
+    {
+        $mode = (string) $this->setting('sumofficeEditorWindow', 'auto');
+        if ($mode === 'frame' || $mode === 'page') {
+            return $mode === 'frame';
+        }
+
+        return self::sameSite((string) parse_url($editorUrl, PHP_URL_HOST), (string) parse_url((string) $this->config->get('siteUrl'), PHP_URL_HOST));
+    }
+
+    /** Same registrable domain, approximately: the last two labels, or three under co.uk-style suffixes. */
+    public static function sameSite(string $a, string $b): bool
+    {
+        $site = function (string $host): string {
+            $host = strtolower(rtrim($host, '.'));
+            if ($host === '' || filter_var($host, FILTER_VALIDATE_IP) || !str_contains($host, '.')) {
+                return $host;
+            }
+            $labels = explode('.', $host);
+            $n = count($labels);
+            $take = $n >= 3 && strlen($labels[$n - 1]) === 2
+                && in_array($labels[$n - 2], ['co', 'com', 'org', 'net', 'gov', 'edu', 'ac', 'or', 'ne', 'go'], true) ? 3 : 2;
+
+            return implode('.', array_slice($labels, -$take));
+        };
+
+        return $a !== '' && $site($a) === $site($b);
+    }
 
     // ---- token ----------------------------------------------------------------
 
@@ -95,8 +181,8 @@ class Wopi
     /** @return ?array{actions: array<string, string>, proof: ?array<string, string>} */
     public function discovery(bool $fresh = false): ?array
     {
-        $url = $this->config->get('sumofficeDiscoveryUrl');
-        if (!$url) {
+        $url = $this->discoveryUrl();
+        if ($url === '') {
             return null;
         }
         $file = $this->cacheFile('discovery.json');
@@ -106,7 +192,7 @@ class Wopi
                 return $cached;
             }
         }
-        $ca = $this->config->get('sumofficeCaBundle');
+        $ca = (string) $this->setting('sumofficeCaBundle', '');
         $context = stream_context_create([
             'http' => ['timeout' => 15],
             'ssl' => $ca ? ['cafile' => $ca, 'verify_peer' => true] : ['verify_peer' => true],
@@ -230,7 +316,7 @@ class Wopi
 
     public function proofOk(Request $request, string $token): bool
     {
-        if ($this->config->get('sumofficeVerifyProof', true) === false) {
+        if (!$this->verifyProof()) {
             return true;
         }
         $keys = $this->discovery()['proof'] ?? null;

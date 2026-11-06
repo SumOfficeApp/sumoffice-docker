@@ -1,0 +1,24 @@
+{
+    "fields": {
+        "sumofficeDiscoveryUrl": {
+            "type": "varchar",
+            "maxLength": 500,
+            "required": true
+        },
+        "sumofficeVerifyProof": {
+            "type": "bool",
+            "default": true
+        },
+        "sumofficeCaBundle": {
+            "type": "varchar",
+            "maxLength": 500
+        },
+        "sumofficeEditorWindow": {
+            "type": "enum",
+            "options": ["auto", "frame", "page"],
+            "default": "auto"
+        }
+    },
+    "allowUserAccounts": false,
+    "view": "sum-office:views/admin/integration"
+}

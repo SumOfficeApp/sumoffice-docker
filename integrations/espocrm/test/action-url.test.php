@@ -6,7 +6,7 @@ namespace Espo\Core\Api { interface Request {} interface Response {} }
 namespace Espo\Core\FileStorage { class Manager {} }
 namespace Espo\Core\ORM { class EntityManager {} }
 namespace Espo\Core\Utils { class Config {} }
-namespace Espo\Entities { class Attachment {} class User {} }
+namespace Espo\Entities { class Attachment {} class Integration {} class User {} }
 namespace {
     require __DIR__ . '/../files/custom/Espo/Modules/SumOffice/Tools/Wopi.php';
     $wopi = (new ReflectionClass(\Espo\Modules\SumOffice\Tools\Wopi::class))->newInstanceWithoutConstructor();

@@ -1,0 +1,21 @@
+{
+    "fields": {
+        "sumofficeDiscoveryUrl": "Discovery URL",
+        "sumofficeVerifyProof": "Verify WOPI proof",
+        "sumofficeCaBundle": "CA bundle (private certificate only)",
+        "sumofficeEditorWindow": "Open the editor"
+    },
+    "options": {
+        "sumofficeEditorWindow": {
+            "auto": "Automatically",
+            "frame": "Inside EspoCRM",
+            "page": "As a whole browser tab"
+        }
+    },
+    "titles": {
+        "SumOffice": "SumOffice"
+    },
+    "help": {
+        "SumOffice": "**Open and edit Word, Excel and PowerPoint files of Documents in SumOffice.**\n\n**Discovery URL** — the WOPI discovery address of the SumOffice editors as the EspoCRM server reaches it, e.g. `https://office.example.com/hosting/discovery`. Save, then press **Check connection**.\n\n**Verify WOPI proof** — every call from the editors is checked against the proof key published in discovery. Keep it on.\n\n**CA bundle** — a path on the EspoCRM server, only when the editors use a certificate from a private CA.\n\n**Open the editor** — *Automatically* opens it inside EspoCRM when the editors are on the same site as EspoCRM (`office.example.com` next to `crm.example.com`) and as a whole browser tab otherwise, because a browser refuses the editor's cookie in a frame from another site.\n\nThe editors must allow this EspoCRM: its `siteUrl` is the address they call back. Guide: [sumoffice.com/espocrm.html](https://sumoffice.com/espocrm.html)."
+    }
+}

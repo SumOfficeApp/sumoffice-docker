@@ -24,7 +24,7 @@
 // Node 20+, no dependencies. Configuration is in environment variables (README.md).
 
 import { createServer } from "node:http";
-import { createHmac, createPublicKey, randomBytes, timingSafeEqual, verify as rsaVerify } from "node:crypto";
+import { createHmac, createPublicKey, randomBytes, randomUUID, timingSafeEqual, verify as rsaVerify } from "node:crypto";
 
 const EXTENSIONS = ["xlsx", "xlsm", "xlsb", "docx", "pptx"];
 const MIME = {
@@ -68,6 +68,9 @@ export function config(env = process.env) {
     clientSecret: env.GOOGLE_CLIENT_SECRET ?? "",
     pickerKey: env.SUMOFFICE_GDRIVE_PICKER_KEY ?? "",
     pickerAppId: env.SUMOFFICE_GDRIVE_APP_ID ?? DEFAULT_PICKER_APP_ID,
+    // Both off unless set: a self-hosted bridge sends nothing anywhere and shows no offer.
+    eventsUrl: env.SUMOFFICE_EVENTS_URL ?? "",
+    proUrl: env.SUMOFFICE_PRO_URL ?? "",
     // Tests only: where Google's sign-in, token endpoint and Drive API live.
     authUrl: oauthBase ? `${oauthBase}/o/oauth2/v2/auth` : "https://accounts.google.com/o/oauth2/v2/auth",
     tokenUrl: oauthBase ? `${oauthBase}/token` : "https://oauth2.googleapis.com/token",
@@ -143,6 +146,23 @@ async function proofOk(c, req, token, url) {
   if (check(current, proof) || check(current, proofOld)) return true;
   return !!(keys.oldmodulus && keys.oldexponent && check(rsaKey(keys.oldmodulus, keys.oldexponent), proof));
 }
+
+// ---- step counters -------------------------------------------------------------
+
+// Install started, install done, file opened. Only the step, the entry (open_with | picker | import),
+// the file type, the page language and whether the browser looks automated: no e-mail, no name,
+// no file id, no token. Fire and forget: a counter never holds up the person.
+const AUTOMATED = /bot|crawler|spider|headless|playwright|puppeteer|phantom|selenium|webdriver|curl|wget/i;
+function track(c, req, type, data = {}, sid = randomUUID()) {
+  if (!c.eventsUrl) return;
+  const automated = AUTOMATED.test(String(req.headers["user-agent"] ?? "")) ? "1" : "0";
+  const body = JSON.stringify({ sid, events: [{ type, data: { from: "gdrive", surface: "gdrive", automated, ...data } }] });
+  fetch(c.eventsUrl, {
+    method: "POST", headers: { "content-type": "application/json", "user-agent": "SumOffice-Drive-bridge/1.0" },
+    body, redirect: "error", signal: AbortSignal.timeout(5000),
+  }).then((r) => r.body?.cancel()).catch(() => {});
+}
+const lang = (req) => (isRu(req) ? "ru" : "en");
 
 // ---- Google OAuth 2.0 ----------------------------------------------------------
 
@@ -309,10 +329,11 @@ function cookies(req) {
 
 // Sends the browser to Google's sign-in. The state is HMAC-signed, lives ten minutes, works once,
 // and is bound to this browser by a cookie named after its nonce.
-function authorize(c, res, { f = "", rk = "", u = "", p = "" }, consent) {
+function authorize(c, res, { f = "", rk = "", u = "", p = "", t = "" }, consent) {
   const n = newId();
   const route = p === "pick" || p === "install" ? p : "";
-  const state = signed(c.tokenKey, { op: "oauth", f, rk, u, p: route, n, c: consent ? 1 : 0, e: Math.floor(Date.now() / 1000) + STATE_TTL });
+  // t: the install's counter id, so "started" and "done" are one person's two steps.
+  const state = signed(c.tokenKey, { op: "oauth", f, rk, u, p: route, t, n, c: consent ? 1 : 0, e: Math.floor(Date.now() / 1000) + STATE_TTL });
   const q = new URLSearchParams({
     client_id: c.clientId, redirect_uri: redirectUri(c), response_type: "code", scope: route ? `${SCOPE} ${INSTALL_SCOPE}` : SCOPE,
     access_type: "offline", include_granted_scopes: "true", state,
@@ -351,6 +372,9 @@ const INSTALL_TEXT = {
     drive: "Go to Google Drive™",
     pick: "Or choose a file here",
     missing: "Google did not grant the permission to add SumOffice to “Open with”. Try again and keep that box ticked.",
+    free: "SumOffice for Google Drive™ is free: open, edit and save your files.",
+    pro: "Sending for signature and seeing who opened a document is in Layers Pro.",
+    proLink: "About Layers Pro",
   },
   ru: {
     title: "Подключить SumOffice к Google Drive™",
@@ -363,6 +387,9 @@ const INSTALL_TEXT = {
     drive: "Перейти в Google Drive™",
     pick: "Или выбрать файл здесь",
     missing: "Google не выдал разрешение добавить SumOffice в «Открыть с помощью». Повторите и оставьте эту галочку включённой.",
+    free: "SumOffice для Google Drive™ бесплатен: открывайте, правьте и сохраняйте файлы.",
+    pro: "Отправка на подпись и отметка, кто открыл документ, есть в Layers Pro.",
+    proLink: "Про Layers Pro",
   },
 };
 
@@ -373,10 +400,19 @@ function installPage(req, res) {
 <p class="note">${esc(t.native)}</p>`);
 }
 
-function installDone(req, res) {
+// A quiet line under the buttons, only where SUMOFFICE_PRO_URL is set; the listing says the app is
+// free, so the line says so first.
+function proNote(c, lang) {
+  if (!/^https:\/\//.test(c.proUrl)) return "";
+  const t = INSTALL_TEXT[lang]; const u = new URL(c.proUrl);
+  u.searchParams.set("from", "gdrive-done");
+  return `<p class="note">${esc(t.free)} ${esc(t.pro)} <a href="${esc(u)}">${esc(t.proLink)}</a></p>`;
+}
+
+function installDone(c, req, res) {
   const lang = isRu(req) ? "ru" : "en"; const t = INSTALL_TEXT[lang];
   page(res, 200, lang, t.doneTitle, `<h1>${esc(t.doneTitle)}</h1><p>${esc(t.done)}</p><p>${esc(t.native)}</p><p class="note">${esc(t.reload)}</p>
-<a class="button" href="https://drive.google.com/">${esc(t.drive)}</a> <a class="button" href="/google/pick">${esc(t.pick)}</a>`);
+<a class="button" href="https://drive.google.com/">${esc(t.drive)}</a> <a class="button" href="/google/pick">${esc(t.pick)}</a>${proNote(c, lang)}`);
 }
 
 function googleHome(res) {
@@ -450,7 +486,7 @@ function editor(c, res, id, name, action) {
 <script>document.getElementById("f").submit()</script>`, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
 }
 
-async function openEditorForFile(c, res, { grant, fileId, resourceKey = "", user, userName, imported = false }) {
+async function openEditorForFile(c, req, res, { grant, fileId, resourceKey = "", user, userName, imported = false, via = "open_with" }) {
   const s0 = { grant, fileId, resourceKey };
   let m;
   try { m = await meta(c, s0); } catch (e) {
@@ -466,7 +502,7 @@ async function openEditorForFile(c, res, { grant, fileId, resourceKey = "", user
       if (e.status === 403) return text(res, 403, "Google Drive™ does not allow this file to be exported or copied for your account.");
       throw e;
     }
-    return openEditorForFile(c, res, { grant, fileId: String(copy.id), user, userName, imported: true });
+    return openEditorForFile(c, req, res, { grant, fileId: String(copy.id), user, userName, imported: true, via });
   }
   const ext = extOf(m);
   if (!EXTENSIONS.includes(ext)) return text(res, 415, `The editor does not open .${ext || "?"} files.`);
@@ -480,6 +516,7 @@ async function openEditorForFile(c, res, { grant, fileId, resourceKey = "", user
     canWrite, until: Date.now() + SESSION_TTL,
   });
   editor(c, res, id, m.name, action);
+  track(c, req, "gdrive_file_opened", { source: imported ? "import" : via, format: ext, mode: canWrite ? "edit" : "view" });
 }
 
 async function picked(c, req, res) {
@@ -492,7 +529,7 @@ async function picked(c, req, res) {
     return text(res, 400, "This file selection is not valid or has expired. Choose the file again.");
   }
   pickerSessions.delete(st.id);
-  return openEditorForFile(c, res, { ...ps, fileId, resourceKey });
+  return openEditorForFile(c, req, res, { ...ps, fileId, resourceKey, via: "picker" });
 }
 
 async function callback(c, req, res) {
@@ -519,7 +556,8 @@ async function callback(c, req, res) {
       return page(res, 403, lang, INSTALL_TEXT[lang].title, `<h1>${esc(INSTALL_TEXT[lang].title)}</h1><p>${esc(INSTALL_TEXT[lang].missing)}</p>
 <a class="button" href="/google/install/start">${esc(INSTALL_TEXT[lang].button)}</a>`);
     }
-    return installDone(req, res);
+    track(c, req, "gdrive_install_done", { lang: lang(req) }, st.t || undefined);
+    return installDone(c, req, res);
   }
   const fresh = { access: tok.access_token, refresh: tok.refresh_token ?? "", exp: expiry(tok), pending: null };
   const me = await whoami(c, { grant: fresh });
@@ -535,7 +573,7 @@ async function callback(c, req, res) {
 
   const userName = String(me.displayName || me.emailAddress || user);
   if (st.p === "pick") return pickerPage(c, res, g, user, userName);
-  return openEditorForFile(c, res, { grant: g, fileId: st.f, resourceKey: st.rk, user, userName });
+  return openEditorForFile(c, req, res, { grant: g, fileId: st.f, resourceKey: st.rk, user, userName });
 }
 
 async function wopi(c, req, res, id, contents) {
@@ -612,7 +650,11 @@ export function start(c = config()) {
       if (path === "/favicon.ico" && req.method === "GET") return send(res, 204);
       if ((path === "/google" || path === "/google/") && req.method === "GET") return googleHome(res);
       if (path === "/google/install" && req.method === "GET") return installPage(req, res);
-      if (path === "/google/install/start" && req.method === "GET") return authorize(c, res, { p: "install" }, false);
+      if (path === "/google/install/start" && req.method === "GET") {
+        const t = randomUUID();
+        track(c, req, "gdrive_install_started", { lang: lang(req) }, t);
+        return authorize(c, res, { p: "install", t }, false);
+      }
       if (path === "/google/pick" && req.method === "GET") return pick(c, res);
       if (path === "/google/picked" && req.method === "POST") return await picked(c, req, res);
       if (path === "/google/open" && req.method === "GET") return await openWith(c, req, res);

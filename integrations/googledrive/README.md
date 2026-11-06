@@ -53,6 +53,8 @@ Google refresh tokens never reach the browser. They stay in the service's memory
    | `TOKEN_KEY` | 16+ characters, the key for signed OAuth states and WOPI access tokens |
    | `SUMOFFICE_DISCOVERY_URL` | `https://office.example.com/hosting/discovery` |
    | `VERIFY_PROOF` | `1` by default |
+   | `SUMOFFICE_EVENTS_URL` | Optional. Where to POST three step counters: install started, install done, file opened. Each carries only the step, the entry (`open_with`, `picker`, `import`), the file type, the page language and an automation bit; no e-mail, name, file id or token. Empty: nothing is sent |
+   | `SUMOFFICE_PRO_URL` | Optional `https://` address. The "Done" page after installation then adds one quiet line under its buttons: the app is free, and where to read about the paid plan (`from=gdrive-done` is added). Empty: no line. The editor screen never shows it |
    | `PORT`, `HOST` | `8792`, `0.0.0.0` |
    | `GOOGLE_API_BASE`, `GOOGLE_OAUTH_BASE` | Tests only: point the Drive API and the OAuth endpoints at a mock |
 

@@ -247,7 +247,7 @@ const DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.doc
 const XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 // A bridge against the Google mock and a discovery with real proof keys, for the tests below.
-async function rig(t, mock) {
+async function rig(t, mock, env = {}) {
   const g = mockGoogle({ clientId: "cid.apps.googleusercontent.com", clientSecret: "csecret", ...mock });
   const gUrl = await listen(g.server);
   const k = generateKeyPairSync("rsa", { modulusLength: 2048 });
@@ -262,7 +262,7 @@ async function rig(t, mock) {
   const bridge = start(config({ PORT: "0", HOST: "127.0.0.1", TOKEN_KEY: "k".repeat(24), PUBLIC_URL: "http://placeholder",
     SUMOFFICE_DISCOVERY_URL: `${discoUrl}/hosting/discovery`, GOOGLE_CLIENT_ID: "cid.apps.googleusercontent.com",
     GOOGLE_CLIENT_SECRET: "csecret", SUMOFFICE_GDRIVE_PICKER_KEY: "picker-key-for-test",
-    GOOGLE_API_BASE: gUrl, GOOGLE_OAUTH_BASE: gUrl }));
+    GOOGLE_API_BASE: gUrl, GOOGLE_OAUTH_BASE: gUrl, ...env }));
   await new Promise((r) => bridge.once("listening", r));
   const base = `http://127.0.0.1:${bridge.address().port}`;
   t.after(() => { bridge.close(); g.server.close(); disco.close(); });
@@ -310,6 +310,7 @@ test("Install entry: “Connect SumOffice to Google Drive™” asks for drive.i
   assert.match(donePage, /<h1>Done<\/h1>/);
   assert.match(donePage, /right-click a \.docx, \.xlsx or \.pptx file → Open with → SumOffice/);
   for (const tok of g.issued) assert.ok(!donePage.includes(tok), "no Google token on the page");
+  assert.ok(!donePage.includes("Layers Pro"), "no offer unless SUMOFFICE_PRO_URL is set");
   assert.ok(!g.calls.some((x) => x.includes("/drive/v3/")), "installing reads no Drive data");
 
   const doneRu = await (await through(await fetch(`${base}/google/install/start`, { redirect: "manual" }),
@@ -394,4 +395,40 @@ test("Importing: Google Docs, Sheets and Slides open as a .docx/.xlsx/.pptx copy
   // The Picker offers Google Docs, Sheets and Slides as well.
   const picker = await (await through(await fetch(`${base}/google/pick`, { redirect: "manual" }))).text();
   for (const m of ["document", "spreadsheet", "presentation"]) assert.match(picker, new RegExp(`application/vnd\\.google-apps\\.${m}`));
+});
+
+test("Counters: install started and done are one person's two steps, a file open says only entry and type; the offer is a quiet line", async (t) => {
+  const got = [];
+  const sink = createServer(async (req, res) => {
+    let b = ""; for await (const ch of req) b += ch;
+    got.push({ ua: req.headers["user-agent"], ...JSON.parse(b) }); res.end("{}");
+  });
+  const sinkUrl = await listen(sink);
+  t.after(() => sink.close());
+  const { base, through } = await rig(t, {
+    users: { "u-rev": { name: "Reviewer", email: "rev@example.com" } },
+    files: [{ id: "x1", name: "Secret budget.xlsx", mimeType: XLSX, owner: "u-rev", data: Buffer.from("PK xlsx") }],
+  }, { SUMOFFICE_EVENTS_URL: `${sinkUrl}/v1/public/live/events`, SUMOFFICE_PRO_URL: "https://layers.example/pricing?x=1" });
+  const until = async (n) => { for (let i = 0; i < 100 && got.length < n; i++) await new Promise((r) => setTimeout(r, 10)); };
+
+  const done = await through(await fetch(`${base}/google/install/start`, { redirect: "manual", headers: { "user-agent": "Mozilla/5.0" } }));
+  assert.equal(done.status, 200);
+  const page = await done.text();
+  assert.match(page, /SumOffice for Google Drive™ is free: open, edit and save your files\./);
+  assert.match(page, /<p class="note">[^<]*Layers Pro\. <a href="https:\/\/layers\.example\/pricing\?x=1&#38;from=gdrive-done">About Layers Pro<\/a><\/p>/);
+  await until(2);
+  assert.deepEqual(got.map((e) => e.events[0].type), ["gdrive_install_started", "gdrive_install_done"]);
+  assert.equal(got[0].sid, got[1].sid, "one sid for both install steps");
+  assert.match(got[0].sid, /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+  assert.deepEqual(got[1].events[0].data, { from: "gdrive", surface: "gdrive", automated: "0", lang: "en" });
+
+  const open = await through(await fetch(`${base}/google/open?state=${encodeURIComponent(JSON.stringify({ ids: ["x1"], action: "open", userId: "u-rev" }))}`,
+    { redirect: "manual" }), { headers: { "user-agent": "Mozilla/5.0 LayersQA-bot/1.0" } });
+  assert.equal(open.status, 200);
+  assert.ok(!(await open.text()).includes("Layers Pro"), "the editor screen has no offer");
+  await until(3);
+  assert.deepEqual(got[2].events[0], { type: "gdrive_file_opened", data: { from: "gdrive", surface: "gdrive", automated: "1", source: "open_with", format: "xlsx", mode: "edit" } });
+  const all = JSON.stringify(got);
+  for (const secret of ["rev@example.com", "Reviewer", "Secret budget", "x1", "u-rev"]) assert.ok(!all.includes(secret), `no ${secret} in counters`);
+  assert.equal(got[0].ua, "SumOffice-Drive-bridge/1.0");
 });
